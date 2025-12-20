@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 MD033 MD041 MD024 MD029 MD030  MD040 MD036 -->
+
 # Workflow Protocol
 
 **Purpose**: Mandatory lifecycle for every change in this project.

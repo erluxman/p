@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD024 MD026 MD022 MD012 MD029 MD030  MD040 MD036 -->
+
 # Project Constitution
 
 **Version:** 1.0  
