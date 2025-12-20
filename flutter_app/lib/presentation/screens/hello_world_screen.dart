@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Hello World screen that displays a greeting message.
-///
-/// This is a simple presentation layer widget that follows the
-/// Hexagonal Architecture pattern by being a pure UI component
-/// with no business logic.
 class HelloWorldScreen extends StatelessWidget {
   const HelloWorldScreen({super.key});
 

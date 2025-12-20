@@ -7,26 +7,9 @@ import '../widgets/add_todo_dialog.dart';
 import '../widgets/day_progress_indicator.dart';
 import '../widgets/todo_card.dart';
 
-/// Main screen for displaying and managing todos.
-///
-/// Shows a list of todos with day progress indicators, and provides
-/// functionality to create, update, and delete todos.
-///
-/// **Features:**
-/// - Day progress indicators for the week
-/// - List of todos with completion status
-/// - Add todo button
-/// - Profile and trophy icons (placeholder)
-///
-/// **Example:**
-/// ```dart
-/// TasksScreen()
-/// ```
 class TasksScreen extends ConsumerWidget {
-  /// Creates a new [TasksScreen] instance.
   const TasksScreen({super.key});
 
-  /// Handles updating todo completion status.
   Future<void> _toggleTodoCompletion(
     WidgetRef ref,
     String todoId,
@@ -38,15 +21,12 @@ class TasksScreen extends ConsumerWidget {
         id: todoId,
         isCompleted: newStatus,
       );
-      // Refresh the todos list
       ref.read(todosStateProvider.notifier).refresh();
     } catch (e) {
-      // Error handling could be improved with a snackbar
       debugPrint('Error updating todo: $e');
     }
   }
 
-  /// Shows the add todo dialog.
   void _showAddTodoDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -63,12 +43,10 @@ class TasksScreen extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
-                children: [
-                  // Profile picture placeholder
+                  children: [
                   const CircleAvatar(
                     radius: 20,
                     backgroundColor: Colors.blue,
@@ -85,7 +63,6 @@ class TasksScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  // Trophy icon placeholder
                   Container(
                     width: 40,
                     height: 40,
@@ -106,19 +83,16 @@ class TasksScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            // Day progress indicators
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16.0),
               child: DayProgressIndicator(),
             ),
-            // Todos list
             Expanded(
               child: _buildTodosList(context, ref, todosState),
             ),
           ],
         ),
       ),
-      // Bottom navigation
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16.0),
         decoration: BoxDecoration(
@@ -131,13 +105,11 @@ class TasksScreen extends ConsumerWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            // Home icon
             IconButton(
               icon: const Icon(Icons.home, size: 28),
               onPressed: () {},
               color: Colors.grey,
             ),
-            // Add Todo button
             Expanded(
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -168,7 +140,6 @@ class TasksScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            // Menu icon
             IconButton(
               icon: const Icon(Icons.menu, size: 28),
               onPressed: () {},
@@ -180,7 +151,6 @@ class TasksScreen extends ConsumerWidget {
     );
   }
 
-  /// Builds the todos list based on the current state.
   Widget _buildTodosList(
     BuildContext context,
     WidgetRef ref,

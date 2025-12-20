@@ -5,38 +5,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/domain/entities/todo_entity.dart';
 import '../../../core/domain/entities/todo_icon_type.dart';
 
-/// Low-level storage operations for Todo entities.
-///
-/// This class handles the serialization and deserialization of todos
-/// to/from SharedPreferences. It provides a simple key-value storage
-/// interface for the repository implementation.
-///
-/// **Storage Format:**
-/// - Key: `todos` (single key storing all todos as JSON array)
-/// - Value: JSON array of todo objects
 class TodoLocalStorage {
-  /// The SharedPreferences instance to use for storage.
   final SharedPreferences _prefs;
-
-  /// The key used to store todos in SharedPreferences.
   static const String _todosKey = 'todos';
 
-  /// Creates a new [TodoLocalStorage] instance.
-  ///
-  /// **Parameters:**
-  /// - `prefs`: The SharedPreferences instance to use
   TodoLocalStorage(this._prefs);
 
-  /// Saves a list of todos to local storage.
-  ///
-  /// **Parameters:**
-  /// - `todos`: The list of todos to save
-  ///
-  /// **Returns:**
-  /// A [Future] that completes with `true` if the save was successful.
-  ///
-  /// **Throws:**
-  /// - `Exception` if serialization or storage fails
   Future<bool> saveTodos(List<TodoEntity> todos) async {
     try {
       final jsonList = todos.map((todo) => _todoToJson(todo)).toList();
@@ -47,14 +21,6 @@ class TodoLocalStorage {
     }
   }
 
-  /// Loads all todos from local storage.
-  ///
-  /// **Returns:**
-  /// A [Future] that completes with a list of [TodoEntity] instances.
-  /// Returns an empty list if no todos are stored.
-  ///
-  /// **Throws:**
-  /// - `Exception` if deserialization fails
   Future<List<TodoEntity>> loadTodos() async {
     try {
       final jsonString = _prefs.getString(_todosKey);
@@ -71,15 +37,10 @@ class TodoLocalStorage {
     }
   }
 
-  /// Clears all todos from local storage.
-  ///
-  /// **Returns:**
-  /// A [Future] that completes with `true` if the clear was successful.
   Future<bool> clearTodos() async {
     return await _prefs.remove(_todosKey);
   }
 
-  /// Converts a [TodoEntity] to a JSON map.
   Map<String, dynamic> _todoToJson(TodoEntity todo) {
     return {
       'id': todo.id,
@@ -92,7 +53,6 @@ class TodoLocalStorage {
     };
   }
 
-  /// Converts a JSON map to a [TodoEntity].
   TodoEntity _todoFromJson(Map<String, dynamic> json) {
     return TodoEntity(
       id: json['id'] as String,

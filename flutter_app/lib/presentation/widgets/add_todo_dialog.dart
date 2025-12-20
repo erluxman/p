@@ -4,38 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/domain/entities/todo_icon_type.dart';
 import '../state/todo_providers.dart';
 
-/// Dialog for creating or editing a todo.
-///
-/// Provides a form with fields for title, description, deadline, and icon type.
-/// Can be used for both creating new todos and editing existing ones.
-///
-/// **Example:**
-/// ```dart
-/// showDialog(
-///   context: context,
-///   builder: (context) => AddTodoDialog(),
-/// );
-/// ```
 class AddTodoDialog extends ConsumerStatefulWidget {
-  /// Optional initial title (for editing).
   final String? initialTitle;
-
-  /// Optional initial description (for editing).
   final String? initialDescription;
-
-  /// Optional initial deadline (for editing).
   final DateTime? initialDeadline;
-
-  /// Optional initial icon type (for editing).
   final TodoIconType? initialIconType;
 
-  /// Creates a new [AddTodoDialog] instance.
-  ///
-  /// **Parameters:**
-  /// - `initialTitle`: Initial title value (for editing)
-  /// - `initialDescription`: Initial description value (for editing)
-  /// - `initialDeadline`: Initial deadline value (for editing)
-  /// - `initialIconType`: Initial icon type (for editing)
   const AddTodoDialog({
     super.key,
     this.initialTitle,
@@ -114,7 +88,6 @@ class _AddTodoDialogState extends ConsumerState<AddTodoDialog> {
           iconType: _selectedIconType,
         );
 
-        // Refresh the todos list
         ref.read(todosStateProvider.notifier).refresh();
 
         if (!mounted) return;
@@ -139,7 +112,6 @@ class _AddTodoDialogState extends ConsumerState<AddTodoDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Title field
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
@@ -155,7 +127,6 @@ class _AddTodoDialogState extends ConsumerState<AddTodoDialog> {
                 autofocus: true,
               ),
               const SizedBox(height: 16),
-              // Description field
               TextFormField(
                 controller: _descriptionController,
                 decoration: const InputDecoration(
@@ -165,7 +136,6 @@ class _AddTodoDialogState extends ConsumerState<AddTodoDialog> {
                 maxLines: 3,
               ),
               const SizedBox(height: 16),
-              // Deadline picker
               ListTile(
                 title: const Text('Deadline'),
                 subtitle: Text(
@@ -177,7 +147,6 @@ class _AddTodoDialogState extends ConsumerState<AddTodoDialog> {
                 onTap: _selectDeadline,
               ),
               const SizedBox(height: 16),
-              // Icon type selector
               DropdownButtonFormField<TodoIconType>(
                 initialValue: _selectedIconType,
                 decoration: const InputDecoration(
