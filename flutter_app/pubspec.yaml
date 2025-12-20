@@ -29,6 +29,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   
+  integration_test:
+    sdk: flutter
+  
   # Testing
   mocktail: ^1.0.0
   build_runner: ^2.4.7
