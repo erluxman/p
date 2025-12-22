@@ -1,5 +1,15 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.13)
+
+# Force use of system C++ compiler instead of Swift's clang++
+# This prevents issues with missing standard library when Swift's clang++ is in PATH
+# Set compiler before project() call to ensure it's used
+if(EXISTS "/usr/bin/g++")
+  set(CMAKE_CXX_COMPILER "/usr/bin/g++" CACHE PATH "C++ compiler" FORCE)
+elseif(EXISTS "/usr/bin/clang++")
+  set(CMAKE_CXX_COMPILER "/usr/bin/clang++" CACHE PATH "C++ compiler" FORCE)
+endif()
+
 project(runner LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
@@ -79,8 +89,13 @@ include(flutter/generated_plugins.cmake)
 # By default, "installing" just makes a relocatable bundle in the build
 # directory.
 set(BUILD_BUNDLE_DIR "${PROJECT_BINARY_DIR}/bundle")
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  set(CMAKE_INSTALL_PREFIX "${BUILD_BUNDLE_DIR}" CACHE PATH "..." FORCE)
+# Always use build directory for install prefix to avoid permission issues
+# Force override any system paths that would require root permissions
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR 
+   CMAKE_INSTALL_PREFIX STREQUAL "/usr/local" OR
+   CMAKE_INSTALL_PREFIX MATCHES "^/usr" OR
+   NOT CMAKE_INSTALL_PREFIX MATCHES "build")
+  set(CMAKE_INSTALL_PREFIX "${BUILD_BUNDLE_DIR}" CACHE PATH "Install path" FORCE)
 endif()
 
 # Start with a clean build bundle directory every time.
