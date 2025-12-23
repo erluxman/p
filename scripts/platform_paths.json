@@ -5,7 +5,7 @@
     "symlinks": [
       {
         "link": "apps/flutter",
-        "target": "flutter_app"
+        "target": "apps/flutter"
       }
     ]
   },
