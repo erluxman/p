@@ -1,0 +1,14 @@
+---
+description: Flutter authentication rules. Only applies when working in auth-related code.
+globs:
+  - "flutter_app/lib/**/auth/**"
+  - "apps/flutter/lib/**/auth/**"
+  - "flutter_app/lib/**/authentication/**"
+  - "apps/flutter/lib/**/authentication/**"
+---
+
+# Flutter: Authentication
+
+- Treat auth flows as security-sensitive. If changing auth behavior, stop and ask for approval.
+- Never log tokens or sensitive user data.
+- Keep Firebase/Auth SDK usage in infrastructure/adapters, not domain.

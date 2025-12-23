@@ -1,0 +1,16 @@
+---
+description: Node.js backend rules index (separate from Firebase Functions and Spring Boot).
+globs:
+  - "backend_nodejs/**"
+  - "backend/node/**"
+  - "apps/backend/node/**"
+  - "services/node/**"
+---
+
+# Backend: Node.js (Index)
+
+## Rule files (by concern)
+
+- `api_validation.mdc`: request validation and DTO/schema boundaries
+- `error_handling.mdc`: error mapping, logging, and no-leak rules
+- `testing.mdc`: unit/integration test expectations

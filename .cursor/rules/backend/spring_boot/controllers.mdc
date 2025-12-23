@@ -1,0 +1,14 @@
+---
+description: Spring Boot controller conventions and boundaries.
+globs:
+  - "backend_spring/src/**/*.{java,kt}"
+  - "backend/spring_boot/src/**/*.{java,kt}"
+  - "apps/backend/spring_boot/src/**/*.{java,kt}"
+  - "services/spring_boot/src/**/*.{java,kt}"
+---
+
+# Spring Boot: Controllers
+
+- Controllers handle HTTP only. Business logic belongs in services/use-cases.
+- Use DTOs for request/response. Do not expose entities directly.
+- Follow REST conventions (methods/status codes).

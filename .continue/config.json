@@ -1,0 +1,19 @@
+{
+  "rules": [
+    "Follow AGENTS.md",
+    "Follow project_constitution.md",
+    "Follow workflow_protocol.md",
+    "Use promotsamples.md templates",
+    "Use ai-dev/* continuity logs to stay aligned across sessions"
+  ],
+  "context": [
+    "AGENTS.md",
+    "project_constitution.md",
+    "workflow_protocol.md",
+    "promotsamples.md",
+    "ai-dev/milestones.md",
+    "ai-dev/tech_debt_ledger.md",
+    "ai-dev/exceptions_log.md"
+  ]
+}
+

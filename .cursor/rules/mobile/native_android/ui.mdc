@@ -1,0 +1,10 @@
+---
+description: Native Android UI rules (applies to presentation layer only).
+globs:
+  - "apps/android/**/presentation/**"
+---
+
+# Native Android: UI
+
+- No business logic in UI layer.
+- Handle loading/error/empty states explicitly in UI.

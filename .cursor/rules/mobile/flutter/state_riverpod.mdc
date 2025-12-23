@@ -1,0 +1,14 @@
+---
+description: Flutter Riverpod rules. Applies only to provider/state paths.
+globs:
+  - "flutter_app/lib/presentation/state/**"
+  - "apps/flutter/lib/presentation/state/**"
+  - "flutter_app/lib/presentation/**/providers/**"
+  - "apps/flutter/lib/presentation/**/providers/**"
+---
+
+# Flutter: Riverpod (State)
+
+- Business logic must live in application/use-cases or dedicated state objects, not widgets.
+- Model async state explicitly (loading/success/error).
+- Keep providers small and composable.

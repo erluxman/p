@@ -1,0 +1,97 @@
+[
+  {
+    "platform": "flutter",
+    "use_dir": "flutter_app",
+    "symlinks": [
+      {
+        "link": "apps/flutter",
+        "target": "flutter_app"
+      }
+    ]
+  },
+  {
+    "platform": "native_android",
+    "use_dir": null,
+    "symlinks": [
+      {
+        "enabled": false,
+        "link": "apps/android",
+        "target": "",
+        "notes": "Enable and set target if your native Android project lives in a differently named folder (e.g., native_android/). Leave disabled if you will create/use apps/android as the real folder."
+      }
+    ]
+  },
+  {
+    "platform": "native_ios",
+    "use_dir": null,
+    "symlinks": [
+      {
+        "enabled": false,
+        "link": "apps/ios",
+        "target": "",
+        "notes": "Enable and set target if your native iOS project lives in a differently named folder (e.g., native_ios/). Leave disabled if you will create/use apps/ios as the real folder."
+      }
+    ]
+  },
+  {
+    "platform": "react_web",
+    "use_dir": null,
+    "symlinks": [
+      {
+        "enabled": false,
+        "link": "apps/web",
+        "target": "",
+        "notes": "Enable and set target if your web app folder isn't apps/web (e.g., react_web/)."
+      }
+    ]
+  },
+  {
+    "platform": "react_native",
+    "use_dir": null,
+    "symlinks": [
+      {
+        "enabled": false,
+        "link": "apps/react_native",
+        "target": "",
+        "notes": "Enable and set target if your RN app folder isn't apps/react_native (e.g., react_native_app/)."
+      }
+    ]
+  },
+  {
+    "platform": "backend_nodejs",
+    "use_dir": null,
+    "symlinks": [
+      {
+        "enabled": false,
+        "link": "services/node",
+        "target": "",
+        "notes": "Enable and set target if your Node service folder isn't services/node (e.g., backend_nodejs/)."
+      }
+    ]
+  },
+  {
+    "platform": "backend_firebase",
+    "use_dir": null,
+    "symlinks": [
+      {
+        "enabled": false,
+        "link": "services/firebase_functions",
+        "target": "",
+        "notes": "Enable and set target if your Firebase Functions folder isn't services/firebase_functions (e.g., backend_firebase/)."
+      }
+    ]
+  },
+  {
+    "platform": "backend_spring",
+    "use_dir": null,
+    "symlinks": [
+      {
+        "enabled": false,
+        "link": "services/spring_boot",
+        "target": "",
+        "notes": "Enable and set target if your Spring Boot folder isn't services/spring_boot (e.g., backend_spring/)."
+      }
+    ]
+  }
+]
+

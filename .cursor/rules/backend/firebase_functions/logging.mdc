@@ -1,0 +1,14 @@
+---
+description: Logging and observability rules for Firebase Functions.
+globs:
+  - "backend_firebase/src/**/*.{ts,tsx}"
+  - "backend/firebase_functions/src/**/*.{ts,tsx}"
+  - "apps/backend/firebase_functions/src/**/*.{ts,tsx}"
+  - "services/firebase_functions/src/**/*.{ts,tsx}"
+---
+
+# Firebase Functions: Logging
+
+- Log enough to debug (request id, function name, high-level failure reason).
+- Never log secrets, tokens, or PII.
+- Errors returned to clients must be safe and consistent.

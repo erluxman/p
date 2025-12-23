@@ -1,0 +1,14 @@
+---
+description: Input validation and API boundary rules for Node.js backends.
+globs:
+  - "backend_nodejs/src/**/*.{ts,tsx}"
+  - "backend/node/src/**/*.{ts,tsx}"
+  - "apps/backend/node/src/**/*.{ts,tsx}"
+  - "services/node/src/**/*.{ts,tsx}"
+---
+
+# Node.js API Validation
+
+- Validate all external input at the boundary (request params/body/headers).
+- Keep business logic out of transport layers (controllers/routes).
+- Define explicit request/response shapes (DTOs/schemas). Avoid `any`.

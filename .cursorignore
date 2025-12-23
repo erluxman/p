@@ -1,0 +1,23 @@
+# Cursor indexing ignore
+#
+# Goal: keep Cursor's index high-signal by excluding large generated artifacts.
+# Note: .gitignore is respected automatically; .cursorignore is an extra layer.
+
+# Flutter / Dart
+flutter_app/build/
+flutter_app/.dart_tool/
+flutter_app/.flutter-plugins-dependencies
+flutter_app/.flutter-plugins
+flutter_app/coverage/
+
+# iOS / macOS CocoaPods
+flutter_app/ios/Pods/
+flutter_app/macos/Pods/
+
+# Android build outputs
+flutter_app/android/.gradle/
+flutter_app/android/app/build/
+
+# Upstream mirrors (keep accessible but out of index by default)
+ai-dev/upstream/
+

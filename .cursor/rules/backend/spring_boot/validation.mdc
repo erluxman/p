@@ -1,0 +1,13 @@
+---
+description: Bean Validation rules for Spring Boot.
+globs:
+  - "backend_spring/src/**/*.{java,kt}"
+  - "backend/spring_boot/src/**/*.{java,kt}"
+  - "apps/backend/spring_boot/src/**/*.{java,kt}"
+  - "services/spring_boot/src/**/*.{java,kt}"
+---
+
+# Spring Boot: Validation
+
+- Validate all inbound DTOs using Bean Validation.
+- Fail fast on invalid inputs with consistent, safe error responses.

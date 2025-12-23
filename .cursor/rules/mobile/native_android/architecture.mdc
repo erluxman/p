@@ -1,0 +1,12 @@
+---
+description: Native Android architecture boundaries.
+globs:
+  - "apps/android/**/core/**"
+  - "apps/android/**/infrastructure/**"
+  - "apps/android/**/presentation/**"
+---
+
+# Native Android: Architecture
+
+- Respect hexagonal boundaries: domain/application must not import Android/framework infrastructure.
+- Keep business logic out of UI; UI reads state and dispatches intents.

@@ -1,0 +1,27 @@
+---
+description: Flutter rules index (split by concern so irrelevant rules don't load).
+globs:
+  - "flutter_app/**"
+  - "apps/flutter/**"
+---
+
+# Mobile: Flutter (Index)
+
+## Path convention (for scoped rules)
+
+- Canonical path: `apps/flutter/` (symlinked to the real Flutter app directory)
+- Real path (current repo): `flutter_app/`
+- Code roots:
+  - Domain/Application: `apps/flutter/lib/core/**` (or `flutter_app/lib/core/**`)
+  - Infrastructure: `apps/flutter/lib/infrastructure/**`
+  - Presentation: `apps/flutter/lib/presentation/**`
+
+## Rule files (by concern)
+
+- `state_bloc.mdc`: BLoC rules (presentation/state only)
+- `state_riverpod.mdc`: Riverpod rules (presentation/state only)
+- `ui_widgets.mdc`: widget composition and UI boundaries
+- `navigation.mdc`: navigation/go_router rules
+- `networking.mdc`: API client boundaries and error mapping
+- `auth.mdc`: authentication boundaries
+- `animations.mdc`: animation-specific guidance (only when working in animation code)

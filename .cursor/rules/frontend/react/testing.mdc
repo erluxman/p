@@ -1,0 +1,13 @@
+---
+description: Frontend testing expectations (React web).
+globs:
+  - "react_web/src/**/*.{ts,tsx}"
+  - "apps/web/src/**/*.{ts,tsx}"
+  - "frontend/**/*.{ts,tsx}"
+---
+
+# Testing (React Web)
+
+- Non-trivial logic must have tests.
+- Bug fixes require a repro test that fails before the fix.
+- Prefer tests that assert behavior, not implementation details.

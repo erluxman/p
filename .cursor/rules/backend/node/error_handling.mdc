@@ -1,0 +1,14 @@
+---
+description: Error handling conventions for Node.js backends.
+globs:
+  - "backend_nodejs/src/**/*.{ts,tsx}"
+  - "backend/node/src/**/*.{ts,tsx}"
+  - "apps/backend/node/src/**/*.{ts,tsx}"
+  - "services/node/src/**/*.{ts,tsx}"
+---
+
+# Node.js Error Handling
+
+- Use async/await; never leave promise rejections unhandled.
+- Map internal errors to safe client responses (no stack traces or secrets).
+- Log with enough context to debug, but never log secrets/PII.

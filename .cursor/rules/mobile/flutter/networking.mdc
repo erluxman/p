@@ -1,0 +1,12 @@
+---
+description: Flutter networking rules (API clients, error mapping, no hardcoded URLs).
+globs:
+  - "flutter_app/lib/infrastructure/**"
+  - "apps/flutter/lib/infrastructure/**"
+---
+
+# Flutter: Networking
+
+- No hardcoded URLs; use configuration.
+- Map network errors into domain/application-friendly failures.
+- Handle timeouts and unexpected errors explicitly.

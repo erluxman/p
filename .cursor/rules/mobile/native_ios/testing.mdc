@@ -1,0 +1,10 @@
+---
+description: Native iOS testing expectations.
+globs:
+  - "apps/ios/**"
+---
+
+# Native iOS: Testing
+
+- Non-trivial logic must have tests.
+- Bug fixes require a failing repro test first.

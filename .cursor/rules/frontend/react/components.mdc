@@ -1,0 +1,14 @@
+---
+description: React components conventions.
+globs:
+  - "react_web/src/**/*.tsx"
+  - "apps/web/src/**/*.tsx"
+  - "frontend/**/components/**/*.tsx"
+---
+
+# React Components
+
+- Use functional components with hooks (no class components).
+- No business logic in components; keep it in application/domain layers or dedicated hooks/services.
+- Handle loading/error/empty states explicitly.
+- Prefer small, composable components; avoid large “god components”.

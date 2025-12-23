@@ -1,0 +1,14 @@
+---
+description: Global exception handling and safe error responses for Spring Boot.
+globs:
+  - "backend_spring/src/**/*.{java,kt}"
+  - "backend/spring_boot/src/**/*.{java,kt}"
+  - "apps/backend/spring_boot/src/**/*.{java,kt}"
+  - "services/spring_boot/src/**/*.{java,kt}"
+---
+
+# Spring Boot: Exceptions
+
+- Use centralized exception handling (e.g., ControllerAdvice).
+- Do not leak stack traces or sensitive details in responses.
+- Log details server-side safely (no secrets/PII).

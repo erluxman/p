@@ -1,0 +1,14 @@
+---
+description: Structure and deployment-safe patterns for Firebase Functions.
+globs:
+  - "backend_firebase/src/**/*.{ts,tsx}"
+  - "backend/firebase_functions/src/**/*.{ts,tsx}"
+  - "apps/backend/firebase_functions/src/**/*.{ts,tsx}"
+  - "services/firebase_functions/src/**/*.{ts,tsx}"
+---
+
+# Firebase Functions: Structure
+
+- Functions should be small and single-purpose.
+- Avoid shared mutable state between invocations.
+- Validate inputs; never trust client-provided data.

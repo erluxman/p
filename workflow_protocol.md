@@ -6,6 +6,14 @@
 
 This protocol ensures consistency, quality, and maintainability. **No code is written outside this workflow.**
 
+## Related governance docs (used by the workflow)
+
+- `project_constitution.md` (architecture constraints)
+- `ai-dev/checklists/code_review_checklist.md` (human review gate)
+- `ai-dev/checklists/security_checklist.md` (security gate)
+- `ai-dev/exceptions_log.md` (approved exceptions to hard constraints)
+- `ai-dev/tech_debt_ledger.md` (record shortcuts + paydown plan)
+
 ---
 
 ## Overview

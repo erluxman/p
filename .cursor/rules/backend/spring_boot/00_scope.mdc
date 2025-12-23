@@ -1,0 +1,17 @@
+---
+description: Spring Boot backend rules index (separate from Node and Firebase Functions).
+globs:
+  - "backend_spring/**"
+  - "backend/spring_boot/**"
+  - "apps/backend/spring_boot/**"
+  - "services/spring_boot/**"
+---
+
+# Backend: Spring Boot (Index)
+
+## Rule files (by concern)
+
+- `controllers.mdc`: controller boundaries, DTOs, REST conventions
+- `validation.mdc`: Bean Validation and request validation rules
+- `exceptions.mdc`: global exception handling and safe error responses
+- `testing.mdc`: service/controller/repository testing expectations

@@ -1,0 +1,20 @@
+---
+description: React web rules index (scoped to react_web/ or apps/web/). Keep rules split by concern.
+globs:
+  - "react_web/**"
+  - "apps/web/**"
+  - "frontend/**"
+---
+
+# React Web (Index)
+
+- This folder contains **topic-scoped** rules. Only relevant rules should load for the files being edited.
+- Always follow `project_constitution.md` and `workflow_protocol.md`.
+- If you need rules outside the current concern (e.g., auth), open the relevant files so their scoped rules apply.
+
+## Rule files (by concern)
+
+- `components.mdc`: component patterns and boundaries
+- `state.mdc`: state management conventions
+- `accessibility.mdc`: a11y requirements
+- `testing.mdc`: tests and test structure for frontend

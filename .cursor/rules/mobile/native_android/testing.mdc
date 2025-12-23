@@ -1,0 +1,10 @@
+---
+description: Native Android testing expectations.
+globs:
+  - "apps/android/**"
+---
+
+# Native Android: Testing
+
+- Non-trivial logic must have tests.
+- Bug fixes require a failing repro test first.

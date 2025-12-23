@@ -1,0 +1,16 @@
+---
+description: Firebase Functions rules index (separate from Node service and Spring Boot).
+globs:
+  - "backend_firebase/**"
+  - "backend/firebase_functions/**"
+  - "apps/backend/firebase_functions/**"
+  - "services/firebase_functions/**"
+---
+
+# Backend: Firebase Functions (Index)
+
+## Rule files (by concern)
+
+- `functions_structure.mdc`: small single-purpose functions, statelessness
+- `auth.mdc`: authn/authz boundaries for callable/HTTP functions
+- `logging.mdc`: safe logging + observability conventions

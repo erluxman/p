@@ -1,0 +1,14 @@
+---
+description: Flutter animations rules. Only applies when working in animation code.
+globs:
+  - "flutter_app/lib/**/animation/**"
+  - "apps/flutter/lib/**/animation/**"
+  - "flutter_app/lib/**/animations/**"
+  - "apps/flutter/lib/**/animations/**"
+---
+
+# Flutter: Animations
+
+- Keep animations isolated to UI/presentation code.
+- Prefer small, testable animation helpers where practical.
+- Avoid introducing heavy animation dependencies without approval.

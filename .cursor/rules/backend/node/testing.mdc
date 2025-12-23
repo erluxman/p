@@ -1,0 +1,14 @@
+---
+description: Testing expectations for Node.js backends.
+globs:
+  - "backend_nodejs/src/**/*.{ts,tsx}"
+  - "backend/node/src/**/*.{ts,tsx}"
+  - "apps/backend/node/src/**/*.{ts,tsx}"
+  - "services/node/src/**/*.{ts,tsx}"
+---
+
+# Testing (Node.js)
+
+- Non-trivial logic must have unit tests.
+- External integrations should have integration tests with clear boundaries/mocks.
+- Bug fixes require failing repro tests first.

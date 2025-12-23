@@ -1,0 +1,14 @@
+---
+description: Flutter UI/widget conventions. Applies to widgets/screens only.
+globs:
+  - "flutter_app/lib/presentation/widgets/**"
+  - "apps/flutter/lib/presentation/widgets/**"
+  - "flutter_app/lib/presentation/screens/**"
+  - "apps/flutter/lib/presentation/screens/**"
+---
+
+# Flutter: UI Widgets
+
+- No business logic in widgets; widgets render state and dispatch intents.
+- Prefer small widgets; avoid massive build methods.
+- Use `const` where possible; prefer `final` over `var`.

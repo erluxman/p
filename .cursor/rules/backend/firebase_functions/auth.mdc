@@ -1,0 +1,14 @@
+---
+description: Authentication/authorization rules for Firebase Functions.
+globs:
+  - "backend_firebase/src/**/*.{ts,tsx}"
+  - "backend/firebase_functions/src/**/*.{ts,tsx}"
+  - "apps/backend/firebase_functions/src/**/*.{ts,tsx}"
+  - "services/firebase_functions/src/**/*.{ts,tsx}"
+---
+
+# Firebase Functions: Auth
+
+- Assume all inbound requests are untrusted until verified.
+- Do not weaken auth requirements without explicit Project Owner approval.
+- Never log tokens or auth headers.

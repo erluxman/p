@@ -8,6 +8,13 @@
 
 This document is the **source of truth** for all architectural decisions, patterns, and constraints. All code must conform to these principles.
 
+## Related governance docs (read first)
+
+- `workflow_protocol.md` (mandatory change lifecycle)
+- `ai-dev/layout_conventions.md` (canonical code layout paths to keep AI + rules aligned)
+- `ai-dev/checklists/code_review_checklist.md` (human review gate)
+- `ai-dev/checklists/security_checklist.md` (security review gate)
+
 ---
 
 ## 1. Architecture: Hexagonal Architecture (Ports & Adapters)

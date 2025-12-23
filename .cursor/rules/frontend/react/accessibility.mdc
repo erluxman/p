@@ -1,0 +1,13 @@
+---
+description: Accessibility requirements for React web UI.
+globs:
+  - "react_web/src/**/*.tsx"
+  - "apps/web/src/**/*.tsx"
+  - "frontend/**/*.tsx"
+---
+
+# Accessibility (React Web)
+
+- Interactive elements must be keyboard accessible.
+- Provide meaningful labels for form fields and controls.
+- Don’t ship UI flows that are mouse-only.

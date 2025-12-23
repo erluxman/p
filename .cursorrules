@@ -23,6 +23,7 @@
 - **Summarize changes** clearly
 - **Highlight breaking changes** if any
 - **Note follow-up tasks** if needed
+- **Completion gates**: Consult `ai-dev/checklists/code_review_checklist.md` and `ai-dev/checklists/security_checklist.md` before claiming work is done.
 
 ---
 

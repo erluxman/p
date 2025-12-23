@@ -1,0 +1,13 @@
+---
+description: React state management rules.
+globs:
+  - "react_web/src/**/state/**/*.{ts,tsx}"
+  - "apps/web/src/**/state/**/*.{ts,tsx}"
+  - "frontend/**/state/**/*.{ts,tsx}"
+---
+
+# React State
+
+- Keep state management out of UI components; UI reads state, doesn’t implement business rules.
+- Prefer local state first; introduce global state only with explicit justification.
+- Ensure async state has clear lifecycle: loading → success/error → retry.

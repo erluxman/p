@@ -1,0 +1,11 @@
+---
+description: Native iOS security rules.
+globs:
+  - "apps/ios/**"
+---
+
+# Native iOS: Security
+
+- Never hardcode secrets.
+- Never log tokens, passwords, or PII.
+- Auth/authz changes require explicit approval.

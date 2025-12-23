@@ -1,0 +1,12 @@
+---
+description: Native iOS architecture boundaries.
+globs:
+  - "apps/ios/**/Core/**"
+  - "apps/ios/**/Infrastructure/**"
+  - "apps/ios/**/Presentation/**"
+---
+
+# Native iOS: Architecture
+
+- Respect hexagonal boundaries: domain/application must not import iOS/framework infrastructure.
+- Keep business logic out of UI; UI renders state and dispatches intents.

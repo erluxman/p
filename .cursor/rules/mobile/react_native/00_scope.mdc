@@ -1,0 +1,15 @@
+---
+description: React Native rules index (split by concern).
+globs:
+  - "react_native_app/**"
+  - "apps/react_native/**"
+---
+
+# Mobile: React Native (Index)
+
+## Rule files (by concern)
+
+- `components.mdc`: component patterns and boundaries
+- `performance.mdc`: list rendering and re-render controls
+- `navigation.mdc`: React Navigation structure
+- `networking.mdc`: API client boundaries and error mapping

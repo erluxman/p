@@ -7,6 +7,9 @@ Cross-platform Habit & Todo App. **TESTS ARE MANDATORY FOR EVERY CHANGE**. Use w
 ## Usage Rules
 
 - Always start with `@project_constitution.md @workflow_protocol.md`
+- For completion gates, also consult:
+  - `@ai-dev/checklists/code_review_checklist.md`
+  - `@ai-dev/checklists/security_checklist.md`
 - **TESTS FIRST** - No code without accompanying tests
 - Fill `[brackets]` exactly - be specific
 - Follow **STOP** commands - never let AI skip steps

@@ -1,0 +1,14 @@
+---
+description: Testing expectations for Spring Boot backends.
+globs:
+  - "backend_spring/src/**/*.{java,kt}"
+  - "backend/spring_boot/src/**/*.{java,kt}"
+  - "apps/backend/spring_boot/src/**/*.{java,kt}"
+  - "services/spring_boot/src/**/*.{java,kt}"
+---
+
+# Testing (Spring Boot)
+
+- Unit test services/use-cases.
+- Use MockMvc/WebMvc tests for controllers where appropriate.
+- Bug fixes require a failing repro test first.

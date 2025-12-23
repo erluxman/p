@@ -1,0 +1,14 @@
+---
+description: Flutter BLoC rules. Applies only to state layer paths.
+globs:
+  - "flutter_app/lib/presentation/state/**"
+  - "apps/flutter/lib/presentation/state/**"
+  - "flutter_app/lib/presentation/**/bloc/**"
+  - "apps/flutter/lib/presentation/**/bloc/**"
+---
+
+# Flutter: BLoC (State)
+
+- Business logic stays out of widgets; widgets render state.
+- Keep events/states explicit; handle error states explicitly (no silent failures).
+- Prefer small blocs over god-blocs; single responsibility.
