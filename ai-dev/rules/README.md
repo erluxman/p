@@ -11,3 +11,4 @@ This folder defines **portable** rule knowledge (human-readable). Cursor enforce
 
 - `rule_taxonomy.md`: what kinds of rules exist and where they live
 - `rule_lifecycle.md`: how rules evolve, how exceptions are handled
+

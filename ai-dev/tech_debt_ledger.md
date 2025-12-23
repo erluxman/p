@@ -10,3 +10,4 @@ Purpose: track deliberate tradeoffs made for speed so they don’t become invisi
 ## Entries
 
 - TBD
+

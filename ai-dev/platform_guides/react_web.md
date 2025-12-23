@@ -36,3 +36,4 @@ apps/web/
 - Component rules apply only to component paths.
 - State rules apply only to state paths.
 - Accessibility rules apply to UI files.
+

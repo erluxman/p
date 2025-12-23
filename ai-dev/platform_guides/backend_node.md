@@ -28,3 +28,4 @@ services/node/
   - `.cursor/rules/core/*`
 - Scoped Node rules:
   - `.cursor/rules/backend/node/*`
+

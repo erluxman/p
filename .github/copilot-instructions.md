@@ -17,3 +17,4 @@ Hard constraints:
 
 - Do not guess requirements. Ask for clarification.
 - Do not violate architecture/process constraints without explicit approval.
+

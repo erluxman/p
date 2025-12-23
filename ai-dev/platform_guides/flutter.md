@@ -52,3 +52,4 @@ Because the layout is layer-first, Cursor can scope rules tightly:
 - `lib/presentation/state/**` triggers state rules (BLoC/Riverpod)
 - `lib/presentation/widgets/**` triggers UI widget rules
 - `lib/infrastructure/**` triggers networking/infrastructure rules
+

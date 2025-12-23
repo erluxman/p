@@ -27,3 +27,4 @@ apps/ios/
   - `.cursor/rules/core/*`
 - Scoped Native iOS rules:
   - `.cursor/rules/mobile/native_ios/*`
+

@@ -31,3 +31,4 @@ apps/react_native/
   - `.cursor/rules/core/*`
 - Scoped React Native rules:
   - `.cursor/rules/mobile/react_native/*`
+

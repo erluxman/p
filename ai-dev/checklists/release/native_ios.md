@@ -17,3 +17,5 @@
 
 - Privacy strings (Info.plist) updated for any new permissions.
 - Permission prompts tested (allow + deny).
+
+

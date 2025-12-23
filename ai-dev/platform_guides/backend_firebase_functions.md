@@ -28,3 +28,4 @@ services/firebase_functions/
   - `.cursor/rules/core/*`
 - Scoped Firebase Functions rules:
   - `.cursor/rules/backend/firebase_functions/*`
+

@@ -15,3 +15,4 @@ Purpose: keep key architectural decisions and their rationale visible over time.
 ## Decisions
 
 - TBD
+

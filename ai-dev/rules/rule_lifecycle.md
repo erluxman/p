@@ -33,3 +33,4 @@ When a hard constraint must be violated:
 1. AI states: which rule, why, and alternatives.
 2. Project Owner approves explicitly.
 3. Record in `ai-dev/exceptions_log.md` with expiry.
+
