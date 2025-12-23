@@ -3,19 +3,32 @@ name: Spring Boot CI
 on:
   push:
     branches: [main, develop]
-    paths:
-      - "apps/backend/spring_boot/**"
-      - ".github/workflows/spring-boot-ci.yml"
   pull_request:
     branches: [main, develop]
-    paths:
-      - "apps/backend/spring_boot/**"
-      - ".github/workflows/spring-boot-ci.yml"
 
 jobs:
+  changes:
+    name: Check for Spring Boot changes
+    runs-on: ubuntu-latest
+    outputs:
+      spring_boot: ${{ steps.filter.outputs.spring_boot }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for Spring Boot changes
+        uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            spring_boot:
+              - 'apps/backend/spring_boot/**'
+
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.spring_boot == 'true'
 
     steps:
       - name: Checkout code
@@ -39,4 +52,3 @@ jobs:
       - name: Run all tests (unit + e2e)
         run: ./gradlew test --no-daemon
         working-directory: apps/backend/spring_boot
-
