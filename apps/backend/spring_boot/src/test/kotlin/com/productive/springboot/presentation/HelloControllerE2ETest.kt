@@ -17,7 +17,7 @@ class HelloControllerE2ETest {
     private var port: Int = 0
 
     @Test
-    fun `should return hello world message`() {
+    fun `should return hello world`() {
         val client = HttpClient.newHttpClient()
         val request = HttpRequest.newBuilder()
             .uri(URI.create("http://localhost:$port/api/hello"))
