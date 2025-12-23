@@ -24,4 +24,3 @@ Goal: keep AI performance and correctness high by preventing context drift and r
 - Work in atomic steps.
 - Prefer 1–3 files per step.
 - Stop when scope expands and re-plan.
-

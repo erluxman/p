@@ -32,4 +32,3 @@ This folder is the **tool-agnostic** source of truth for how we build software w
 ## If you switch IDEs
 
 Other IDE agents should be pointed to the same “law” files above, plus the `ai-dev/` continuity logs.
-

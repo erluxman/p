@@ -36,4 +36,3 @@ apps/android/
 - Keep UI in `presentation/`
 - Keep business logic in `core/`
 - Keep Android/framework details in `infrastructure/` + `presentation/`
-

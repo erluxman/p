@@ -96,5 +96,3 @@ If a module grows large, introduce **concern folders** *within a layer*:
 - `infrastructure/networking/**` vs `infrastructure/storage/**`
 
 This improves rule scoping and keeps AI from mixing concerns.
-
-

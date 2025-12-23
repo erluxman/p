@@ -38,5 +38,3 @@ Use the relevant platform checklist(s):
 
 - Monitoring/alerts in place for key paths.
 - Rollback procedure documented and tested where feasible.
-
-

@@ -52,4 +52,3 @@ Cursor effectively considers:
 - **Manual inclusion** (when you explicitly reference a file or rule)
 
 Source reference: see `ai-dev/upstream/cursor-best-practices/README.md`.
-

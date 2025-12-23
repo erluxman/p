@@ -23,5 +23,3 @@ Request:
 4. Summarize diff and remaining follow-ups.
 
 STOP after each step and wait for approval.
-
-

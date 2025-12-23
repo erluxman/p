@@ -15,4 +15,3 @@ Purpose: keep long-term project intent visible across chat sessions so work stay
 ## Completed milestones
 
 - TBD
-

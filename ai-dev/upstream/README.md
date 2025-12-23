@@ -26,5 +26,3 @@ Purpose: keep local copies of high-signal public rule/guideline repos so we can 
   - any guidance that increases scope drift (giant monolithic rules)
 
 See `ai-dev/upstream/adoption_matrix.md` for the decision log.
-
-

@@ -276,7 +276,7 @@ Based on research from cursorintro.com and related resources, this plan outlines
 
 ## Recommended File Structure
 
-```
+```markdown
 project-root/
 ├── .cursorrules                    # Enhanced with TDD, MCP, context
 ├── .cursor/

@@ -22,7 +22,7 @@ This project follows **Hexagonal Architecture** (Ports & Adapters) with strict d
 
 ## Directory Structure
 
-```
+```markdown
 lib/
 ├── core/
 │   ├── domain/          # Business entities, repositories (interfaces), services
@@ -45,12 +45,14 @@ test/
 
 ### Installation
 
-1. Install dependencies:
+### 1. Install dependencies
+
 ```bash
 flutter pub get
 ```
 
-2. Run the app:
+### 2. Run the app
+
 ```bash
 flutter run
 ```
@@ -79,4 +81,3 @@ See `project_constitution.md` and `workflow_protocol.md` for detailed guidelines
 ## License
 
 Private project - All rights reserved.
-
