@@ -4,7 +4,7 @@
 
 Write a 10-line spec using this format:
 
-```
+```text
 **Feature**:
 **Purpose**:
 **Behavior**:
@@ -17,5 +17,3 @@ Rules:
 - Ask clarifying questions if anything is ambiguous.
 - Do not propose implementation yet.
 STOP. Wait for approval.
-
-
