@@ -82,6 +82,9 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install system dependencies for emulator
+        run: sudo apt-get update && sudo apt-get install -y libx11-6 libx11-xcb1 libglu1-mesa
+
       - name: Grant execute permission for gradlew
         run: chmod +x apps/mobile/android/gradlew
         working-directory: ${{ github.workspace }}
