@@ -38,17 +38,18 @@ test.describe("Todo App E2E", () => {
     await page.getByRole("textbox", { name: /title/i }).fill("Original Todo");
     await page.click('button:has-text("Create")');
 
-    await page.waitForSelector("text=Original Todo");
-    const editButtons = page
-      .locator('button[aria-label*="edit"], button:has(svg)')
-      .first();
-    await editButtons.click();
+    await expect(page.getByText("Original Todo")).toBeVisible();
+    const editButton = page.getByRole("button", { name: /edit todo/i }).first();
+    await editButton.click();
 
-    await page.waitForSelector('button:has-text("Update")');
+    // Wait for the edit dialog to appear
+    await expect(page.getByRole("dialog")).toBeVisible();
+    const updateButton = page.getByRole("button", { name: /^update$/i });
+    await expect(updateButton).toBeVisible();
     const titleInput = page.getByRole("textbox", { name: /title/i });
     await titleInput.clear();
     await titleInput.fill("Updated Todo");
-    await page.click('button:has-text("Update")');
+    await updateButton.click();
 
     await expect(page.getByText("Updated Todo")).toBeVisible();
     await expect(page.getByText("Original Todo")).not.toBeVisible();
@@ -61,11 +62,14 @@ test.describe("Todo App E2E", () => {
 
     await expect(page.getByText("Todo to Delete")).toBeVisible();
 
-    const deleteButtons = page.locator("button:has(svg)").nth(1);
-    await deleteButtons.click();
+    const deleteButton = page.getByRole("button", { name: /delete todo/i }).first();
+    await deleteButton.click();
 
-    await page.waitForSelector('button:has-text("Delete")');
-    await page.click('button:has-text("Delete")');
+    // Wait for the confirmation dialog to appear
+    await expect(page.getByRole("dialog")).toBeVisible();
+    const confirmDeleteButton = page.getByRole("button", { name: /^delete$/i });
+    await expect(confirmDeleteButton).toBeVisible();
+    await confirmDeleteButton.click();
 
     await expect(page.getByText("Todo to Delete")).not.toBeVisible();
   });
