@@ -16,6 +16,7 @@ viewModel = "2.7.0"
 mockk = "1.13.10"
 paparazzi = "1.3.2"
 materialIconsExtended = "1.4.0"
+hiltTesting = "2.51.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -46,6 +47,7 @@ lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-ru
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 paparazzi = { group = "app.cash.paparazzi", name = "paparazzi", version.ref = "paparazzi" }
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "materialIconsExtended" }
+hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hiltTesting" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

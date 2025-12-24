@@ -22,6 +22,12 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+    
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 
     buildTypes {
         release {
@@ -41,6 +47,15 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+    
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/LICENSE.md"
+            excludes += "/META-INF/LICENSE.txt"
+            excludes += "/META-INF/LICENSE-notice.md"
+        }
     }
 }
 
@@ -87,7 +102,8 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    androidTestImplementation(libs.paparazzi)
+    // Paparazzi removed from androidTest due to minSdk 26 requirement (app uses minSdk 24)
+    // Screenshot tests can be added later when minSdk is increased or as unit tests
     
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
