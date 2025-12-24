@@ -14,5 +14,3 @@ Do:
 1. Run through the release checklist and flag missing items.
 2. List risks and mitigations.
 3. Produce release notes (user-facing + technical).
-
-

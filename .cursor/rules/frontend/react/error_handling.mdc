@@ -1,0 +1,60 @@
+---
+description: Error handling and Result/Either pattern for React web applications.
+globs:
+  - "react_web/src/**/*.{ts,tsx}"
+  - "apps/web/src/**/*.{ts,tsx}"
+  - "frontend/**/*.{ts,tsx}"
+---
+
+# Error Handling (React Web)
+
+- Use Either/Result pattern for use cases and application layer operations.
+- Never throw exceptions from use cases; return Result/Either types instead.
+- Map Result/Either to UI state (loading, success, error) in presentation layer.
+- Handle all async operations with proper error boundaries and user feedback.
+
+## Result/Either Pattern
+
+Use a Result type for operations that can succeed or fail:
+
+```typescript
+// core/application/types/result.ts
+export type Result<T, E = string> = 
+  | { success: true; data: T }
+  | { success: false; error: E };
+
+// Usage in use cases
+export class CreateTodoUseCase {
+  async execute(params: CreateTodoParams): Promise<Result<TodoEntity, string>> {
+    // Validation
+    if (!params.title?.trim()) {
+      return { success: false, error: 'Title is required' };
+    }
+    
+    // Business logic
+    try {
+      const todo = await this.repository.create(todo);
+      return { success: true, data: todo };
+    } catch (error) {
+      return { success: false, error: 'Failed to create todo' };
+    }
+  }
+}
+```
+
+## Presentation Layer Handling
+
+```typescript
+// In components or Redux thunks
+const handleCreate = async () => {
+  const result = await createTodoUseCase.execute(params);
+  
+  if (result.success) {
+    // Update UI state
+    dispatch(todoCreated(result.data));
+  } else {
+    // Show error to user
+    setError(result.error);
+  }
+};
+```

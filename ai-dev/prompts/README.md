@@ -20,5 +20,3 @@ These are reusable prompt templates meant to be used across IDEs/agents.
 - `refactor.md`: behavior-preserving refactor template
 - `review.md`: structured code review request
 - `release.md`: pre-ship checklist prompt
-
-
