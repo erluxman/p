@@ -1,0 +1,148 @@
+---
+description: React Native networking rules (API client boundaries, error mapping, interceptors).
+globs:
+  - "react_native_app/**/infrastructure/**/*.{ts,tsx}"
+  - "apps/mobile/react_native/**/infrastructure/**/*.{ts,tsx}"
+---
+
+# React Native: Networking
+
+- Use centralized API client (axios or fetch with interceptors).
+- Map network errors into domain-friendly Result/Either types.
+- Handle timeouts and network failures explicitly.
+- Never hardcode API URLs; use configuration.
+- Implement request/response interceptors for auth and logging.
+
+## API Client Setup
+
+```tsx
+// infrastructure/adapters/api/apiClient.ts
+import axios, { AxiosInstance, AxiosError } from 'axios';
+import Config from '../../config';
+
+class ApiClient {
+  private client: AxiosInstance;
+  
+  constructor() {
+    this.client = axios.create({
+      baseURL: Config.API_BASE_URL, // From config, not hardcoded
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    this.setupInterceptors();
+  }
+  
+  private setupInterceptors() {
+    // Request interceptor for auth
+    this.client.interceptors.request.use(
+      (config) => {
+        const token = getAuthToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+    
+    // Response interceptor for error handling
+    this.client.interceptors.response.use(
+      (response) => response,
+      (error: AxiosError) => {
+        if (error.response?.status === 401) {
+          // Handle unauthorized
+          clearAuthToken();
+          // Navigate to login
+        }
+        return Promise.reject(error);
+      }
+    );
+  }
+  
+  async get<T>(url: string): Promise<T> {
+    const response = await this.client.get<T>(url);
+    return response.data;
+  }
+  
+  async post<T>(url: string, data: unknown): Promise<T> {
+    const response = await this.client.post<T>(url, data);
+    return response.data;
+  }
+}
+
+export const apiClient = new ApiClient();
+```
+
+## Error Mapping
+
+```tsx
+// infrastructure/adapters/api/errorMapper.ts
+import { AxiosError } from 'axios';
+
+export class NetworkError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NetworkError';
+  }
+}
+
+export class ServerError extends Error {
+  constructor(message: string, public statusCode: number) {
+    super(message);
+    this.name = 'ServerError';
+  }
+}
+
+export function mapAxiosError(error: unknown): Error {
+  if (error instanceof AxiosError) {
+    if (!error.response) {
+      return new NetworkError('Network request failed');
+    }
+    
+    if (error.response.status >= 500) {
+      return new ServerError('Server error', error.response.status);
+    }
+    
+    if (error.response.status === 401) {
+      return new Error('Unauthorized');
+    }
+    
+    return new Error(error.response.data?.message || 'Request failed');
+  }
+  
+  return error instanceof Error ? error : new Error('Unknown error');
+}
+
+// Usage in repository
+class TodoRepositoryImpl implements TodoRepository {
+  async getTodos(): Promise<Either<Error, Todo[]>> {
+    try {
+      const todos = await apiClient.get<TodoDto[]>('/todos');
+      return Right(todos.map(dto => dtoToEntity(dto)));
+    } catch (error) {
+      return Left(mapAxiosError(error));
+    }
+  }
+}
+```
+
+## Result/Either Pattern
+
+```tsx
+// Use fp-ts or similar for Either type
+import { Either, left, right } from 'fp-ts/Either';
+
+class TodoRepositoryImpl implements TodoRepository {
+  async getTodos(): Promise<Either<Error, Todo[]>> {
+    try {
+      const todos = await apiClient.get<TodoDto[]>('/todos');
+      return right(todos.map(dto => dtoToEntity(dto)));
+    } catch (error) {
+      return left(mapAxiosError(error));
+    }
+  }
+}
+```

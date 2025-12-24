@@ -25,3 +25,7 @@ globs:
 - `networking.mdc`: API client boundaries and error mapping
 - `auth.mdc`: authentication boundaries
 - `animations.mdc`: animation-specific guidance (only when working in animation code)
+- `performance.mdc`: build optimization, const constructors, efficient rendering
+- `error_handling.mdc`: exception handling, Result types, user-friendly errors
+- `accessibility.mdc`: semantics, screen readers, a11y support
+- `testing.mdc`: unit tests, widget tests, integration tests

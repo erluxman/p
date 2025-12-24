@@ -10,5 +10,10 @@ globs:
 
 - `architecture.mdc`: layer boundaries (Core/Infrastructure/Presentation)
 - `ui.mdc`: UI boundaries (no business logic in UI)
+- `performance.mdc`: memory management, async/await, background tasks
+- `networking.mdc`: URLSession, Codable, error handling
+- `state.mdc`: SwiftUI state, Combine, MVVM patterns
+- `error_handling.mdc`: Error types, Result types, throwing functions
+- `accessibility.mdc`: VoiceOver, accessibility labels, dynamic type
 - `testing.mdc`: testing expectations
 - `security.mdc`: no secrets, safe logging, safe auth changes

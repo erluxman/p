@@ -1,0 +1,137 @@
+---
+description: React Native performance optimization (list rendering, memoization, re-render controls).
+globs:
+  - "react_native_app/**/*.{ts,tsx}"
+  - "apps/mobile/react_native/**/*.{ts,tsx}"
+---
+
+# React Native: Performance
+
+- Use `FlatList` or `SectionList` for long lists (never `ScrollView` with map).
+- Memoize expensive computations with `useMemo`.
+- Memoize callbacks with `useCallback`.
+- Use `React.memo` for components that receive stable props.
+- Minimize JavaScript execution in UI thread; offload heavy work.
+
+## List Rendering
+
+```tsx
+// ✅ GOOD: FlatList for long lists (virtualized)
+<FlatList
+  data={todos}
+  renderItem={({ item }) => <TodoItem todo={item} />}
+  keyExtractor={(item) => item.id}
+  removeClippedSubviews={true}
+  maxToRenderPerBatch={10}
+  windowSize={10}
+/>
+
+// ❌ BAD: ScrollView with map (renders all items at once)
+<ScrollView>
+  {todos.map(todo => <TodoItem key={todo.id} todo={todo} />)}
+</ScrollView>
+```
+
+## Memoization
+
+```tsx
+// ✅ GOOD: Memoize expensive computations
+const TodoList: React.FC<{ todos: Todo[] }> = ({ todos }) => {
+  const completedCount = useMemo(
+    () => todos.filter(t => t.isCompleted).length,
+    [todos]
+  );
+  
+  const sortedTodos = useMemo(
+    () => [...todos].sort((a, b) => a.title.localeCompare(b.title)),
+    [todos]
+  );
+  
+  return (
+    <View>
+      <Text>Completed: {completedCount}</Text>
+      <FlatList data={sortedTodos} renderItem={...} />
+    </View>
+  );
+};
+
+// ❌ BAD: Recomputing on every render
+const TodoList: React.FC<{ todos: Todo[] }> = ({ todos }) => {
+  const completedCount = todos.filter(t => t.isCompleted).length; // Recomputes every render!
+  // ...
+};
+```
+
+## Callback Memoization
+
+```tsx
+// ✅ GOOD: Memoize callbacks
+const TodoItem: React.FC<{ todo: Todo; onToggle: (id: string) => void }> = ({ 
+  todo, 
+  onToggle 
+}) => {
+  const handleToggle = useCallback(() => {
+    onToggle(todo.id);
+  }, [todo.id, onToggle]);
+  
+  return (
+    <TouchableOpacity onPress={handleToggle}>
+      <Text>{todo.title}</Text>
+    </TouchableOpacity>
+  );
+};
+
+// ❌ BAD: New function on every render
+const TodoItem: React.FC<{ todo: Todo; onToggle: (id: string) => void }> = ({ 
+  todo, 
+  onToggle 
+}) => {
+  return (
+    <TouchableOpacity onPress={() => onToggle(todo.id)}> {/* New function every render! */}
+      <Text>{todo.title}</Text>
+    </TouchableOpacity>
+  );
+};
+```
+
+## React.memo
+
+```tsx
+// ✅ GOOD: Memoize components with stable props
+const TodoItem = React.memo<TodoItemProps>(({ todo, onToggle }) => {
+  return (
+    <View>
+      <Text>{todo.title}</Text>
+      <TouchableOpacity onPress={() => onToggle(todo.id)}>
+        <Text>Toggle</Text>
+      </TouchableOpacity>
+    </View>
+  );
+});
+
+// ❌ BAD: Component re-renders even when props haven't changed
+const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle }) => {
+  // Re-renders on every parent render
+  // ...
+};
+```
+
+## Image Optimization
+
+```tsx
+// ✅ GOOD: Optimize images
+<Image
+  source={{ uri: imageUrl }}
+  resizeMode="cover"
+  style={{ width: 200, height: 200 }}
+/>
+
+// Use react-native-fast-image for better performance
+import FastImage from 'react-native-fast-image';
+
+<FastImage
+  source={{ uri: imageUrl, priority: FastImage.priority.normal }}
+  resizeMode={FastImage.resizeMode.cover}
+  style={{ width: 200, height: 200 }}
+/>
+```

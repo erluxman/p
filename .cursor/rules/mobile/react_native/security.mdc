@@ -1,0 +1,156 @@
+---
+description: React Native security rules (secure storage, token management, SSL pinning).
+globs:
+  - "react_native_app/**/*.{ts,tsx}"
+  - "apps/mobile/react_native/**/*.{ts,tsx}"
+---
+
+# React Native: Security
+
+- Never hardcode secrets, API keys, or tokens in source code.
+- Use secure storage (react-native-keychain) for sensitive data.
+- Implement SSL pinning for production builds.
+- Never log sensitive data (tokens, passwords, PII).
+- Validate and sanitize all external input.
+
+## Secure Storage
+
+```tsx
+// ✅ GOOD: Use react-native-keychain for sensitive data
+import * as Keychain from 'react-native-keychain';
+
+class SecureStorage {
+  static async saveToken(token: string): Promise<void> {
+    await Keychain.setGenericPassword('auth_token', token, {
+      service: 'myapp_auth',
+      accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED,
+    });
+  }
+  
+  static async getToken(): Promise<string | null> {
+    const credentials = await Keychain.getGenericPassword({
+      service: 'myapp_auth',
+    });
+    return credentials ? credentials.password : null;
+  }
+  
+  static async deleteToken(): Promise<void> {
+    await Keychain.resetGenericPassword({ service: 'myapp_auth' });
+  }
+}
+
+// ❌ BAD: Storing tokens in AsyncStorage (not secure)
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+await AsyncStorage.setItem('auth_token', token); // Not encrypted!
+```
+
+## Configuration Management
+
+```tsx
+// ✅ GOOD: Use environment variables for configuration
+// config/env.ts
+import Config from 'react-native-config';
+
+export const API_BASE_URL = Config.API_BASE_URL;
+export const API_KEY = Config.API_KEY;
+
+// .env (not committed to git)
+// API_BASE_URL=https://api.example.com
+// API_KEY=your_api_key_here
+
+// ❌ BAD: Hardcoded secrets
+const API_KEY = 'sk_live_1234567890'; // Never do this!
+```
+
+## SSL Pinning
+
+```tsx
+// ✅ GOOD: SSL pinning for production
+import { fetch } from 'react-native-ssl-pinning';
+
+const apiCall = async (url: string, data: unknown) => {
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(data),
+      sslPinning: {
+        certs: ['cert1', 'cert2'], // Your SSL certificates
+      },
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return await response.json();
+  } catch (error) {
+    // Handle SSL pinning failure
+    console.error('SSL pinning error:', error);
+    throw error;
+  }
+};
+```
+
+## Input Validation
+
+```tsx
+// ✅ GOOD: Validate and sanitize input
+import { z } from 'zod';
+
+const CreateTodoSchema = z.object({
+  title: z.string().min(1).max(100).trim(),
+  description: z.string().max(500).optional(),
+});
+
+class CreateTodoUseCase {
+  async execute(params: unknown): Promise<Either<Error, TodoEntity>> {
+    // Validate input
+    const validationResult = CreateTodoSchema.safeParse(params);
+    if (!validationResult.success) {
+      return left(new ValidationError(validationResult.error.message));
+    }
+    
+    // Use validated data
+    const { title, description } = validationResult.data;
+    // ...
+  }
+}
+```
+
+## Safe Logging
+
+```tsx
+// ✅ GOOD: Redact sensitive data from logs
+const logError = (error: Error, context?: Record<string, unknown>) => {
+  const safeContext = { ...context };
+  
+  // Redact sensitive fields
+  if (safeContext.token) {
+    safeContext.token = '[REDACTED]';
+  }
+  if (safeContext.password) {
+    safeContext.password = '[REDACTED]';
+  }
+  
+  console.error('Error:', error.message, safeContext);
+  // Send to error reporting service
+};
+
+// ❌ BAD: Logging sensitive data
+console.log('User token:', token); // Never log tokens!
+```
+
+## Code Obfuscation
+
+- Enable code obfuscation for production builds.
+- Use ProGuard (Android) and code obfuscation tools.
+- Never include debug information in production builds.
+
+```bash
+# Android: Enable ProGuard in build.gradle
+buildTypes {
+  release {
+    minifyEnabled true
+    proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+  }
+}
+```

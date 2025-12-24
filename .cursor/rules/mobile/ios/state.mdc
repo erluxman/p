@@ -1,0 +1,173 @@
+---
+description: Native iOS state management rules (SwiftUI state, Combine, MVVM).
+globs:
+  - "apps/mobile/ios/**/Presentation/**"
+---
+
+# Native iOS: State Management
+
+- Use SwiftUI @State, @Binding, @ObservedObject, @StateObject for UI state.
+- Use Combine for reactive programming when needed.
+- Keep business logic in ViewModels, not in Views.
+- Use MVVM pattern for separation of concerns.
+- Never expose mutable state directly; use computed properties or methods.
+
+## SwiftUI State
+
+```swift
+// ✅ GOOD: SwiftUI state management
+struct TodoListView: View {
+    @StateObject private var viewModel = TodoViewModel()
+    
+    var body: some View {
+        List(viewModel.todos) { todo in
+            TodoItemView(todo: todo)
+        }
+        .task {
+            await viewModel.loadTodos()
+        }
+    }
+}
+
+// ViewModel
+class TodoViewModel: ObservableObject {
+    @Published var todos: [Todo] = []
+    @Published var isLoading = false
+    @Published var error: Error?
+    
+    private let repository: TodoRepository
+    
+    init(repository: TodoRepository) {
+        self.repository = repository
+    }
+    
+    func loadTodos() async {
+        await MainActor.run {
+            isLoading = true
+            error = nil
+        }
+        
+        let result = await repository.getTodos()
+        
+        await MainActor.run {
+            isLoading = false
+            switch result {
+            case .success(let todos):
+                self.todos = todos
+            case .failure(let error):
+                self.error = error
+            }
+        }
+    }
+}
+```
+
+## Combine (When Needed)
+
+```swift
+// ✅ GOOD: Combine for reactive streams
+import Combine
+
+class TodoViewModel: ObservableObject {
+    @Published var todos: [Todo] = []
+    private var cancellables = Set<AnyCancellable>()
+    
+    init(repository: TodoRepository) {
+        repository.todosPublisher
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$todos)
+    }
+}
+```
+
+## MVVM Pattern
+
+```swift
+// ✅ GOOD: Business logic in ViewModel
+class TodoViewModel: ObservableObject {
+    @Published var todos: [Todo] = []
+    @Published var isLoading = false
+    
+    private let createTodoUseCase: CreateTodoUseCase
+    
+    func createTodo(title: String) async {
+        await MainActor.run { isLoading = true }
+        
+        let result = await createTodoUseCase.execute(title: title)
+        
+        await MainActor.run {
+            isLoading = false
+            switch result {
+            case .success(let todo):
+                todos.append(todo)
+            case .failure(let error):
+                // Handle error
+                break
+            }
+        }
+    }
+}
+
+// View only renders state
+struct CreateTodoView: View {
+    @StateObject private var viewModel = TodoViewModel()
+    @State private var title = ""
+    
+    var body: some View {
+        Form {
+            TextField("Title", text: $title)
+            Button("Create") {
+                Task {
+                    await viewModel.createTodo(title: title)
+                }
+            }
+        }
+    }
+}
+
+// ❌ BAD: Business logic in View
+struct CreateTodoView: View {
+    @State private var title = ""
+    
+    var body: some View {
+        Button("Create") {
+            // Business logic here - WRONG!
+            Task {
+                let todo = await repository.create(title: title)
+                // ...
+            }
+        }
+    }
+}
+```
+
+## State Lifecycle
+
+```swift
+// ✅ GOOD: Clear state lifecycle
+enum TodoState {
+    case idle
+    case loading
+    case loaded([Todo])
+    case error(Error)
+}
+
+class TodoViewModel: ObservableObject {
+    @Published var state: TodoState = .idle
+    
+    func loadTodos() async {
+        await MainActor.run { state = .loading }
+        
+        let result = await repository.getTodos()
+        
+        await MainActor.run {
+            switch result {
+            case .success(let todos):
+                state = .loaded(todos)
+            case .failure(let error):
+                state = .error(error)
+            }
+        }
+    }
+}
+```

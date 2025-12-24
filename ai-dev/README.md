@@ -2,6 +2,10 @@
 
 This folder is the **tool-agnostic** source of truth for how we build software with AI assistance.
 
+## 📋 Master Index
+
+**Start here**: See `ai-dev/INDEX.md` for a comprehensive index of all rules, documentation, guides, and templates. This ensures nothing goes unnoticed when querying the LLM.
+
 ## How this repo enforces rules
 
 - **Cursor enforcement**: `.cursor/rules/**/*.mdc` (hard constraints + scoped platform/concern rules)
@@ -28,6 +32,15 @@ This folder is the **tool-agnostic** source of truth for how we build software w
   - `ai-dev/prompts/README.md`
 - **Platform guides**:
   - `ai-dev/platform_guides/flutter.md`
+  - `ai-dev/platform_guides/react_native.md`
+  - `ai-dev/platform_guides/native_android.md`
+  - `ai-dev/platform_guides/native_ios.md`
+  - `ai-dev/platform_guides/react_web.md`
+  - `ai-dev/platform_guides/backend_node.md`
+  - `ai-dev/platform_guides/backend_firebase_functions.md`
+  - `ai-dev/platform_guides/backend_spring_boot.md`
+- **Master index**:
+  - `ai-dev/INDEX.md` - Complete index of all resources
 
 ## If you switch IDEs
 

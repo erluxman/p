@@ -39,11 +39,19 @@ apps/mobile/flutter/
   - `.cursor/rules/mobile/flutter/networking.mdc`
   - `.cursor/rules/mobile/flutter/auth.mdc`
   - `.cursor/rules/mobile/flutter/animations.mdc`
+  - `.cursor/rules/mobile/flutter/performance.mdc`
+  - `.cursor/rules/mobile/flutter/error_handling.mdc`
+  - `.cursor/rules/mobile/flutter/accessibility.mdc`
+  - `.cursor/rules/mobile/flutter/testing.mdc`
 
 ## Rule intent
 
 - BLoC/Riverpod rules only load when editing state files.
 - Auth/animation rules only load when editing auth/animation code.
+- Performance rules apply to presentation layer (widgets, screens).
+- Error handling rules apply to all layers.
+- Accessibility rules only load when editing presentation layer.
+- Testing rules apply to test files.
 
 ## Path→Rule alignment (why this layout matters)
 

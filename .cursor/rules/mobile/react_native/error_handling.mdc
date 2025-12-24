@@ -1,0 +1,178 @@
+---
+description: React Native error handling rules (error boundaries, try-catch, Result/Either pattern).
+globs:
+  - "react_native_app/**/*.{ts,tsx}"
+  - "apps/mobile/react_native/**/*.{ts,tsx}"
+---
+
+# React Native: Error Handling
+
+- Use Error Boundaries for React component errors.
+- Use Result/Either pattern (fp-ts) for use cases and application layer operations.
+- Never throw exceptions from use cases; return Either types instead.
+- Handle all async operations with proper error handling and user feedback.
+- Log errors appropriately; never log sensitive data.
+
+## Error Boundaries
+
+```tsx
+// presentation/components/ErrorBoundary.tsx
+import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
+
+interface Props {
+  children: ReactNode;
+  fallback?: ReactNode;
+}
+
+interface State {
+  hasError: boolean;
+  error: Error | null;
+}
+
+export class ErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
+  }
+  
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // Log to error reporting service
+  }
+  
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <View>
+          <Text>Something went wrong</Text>
+          <TouchableOpacity onPress={() => this.setState({ hasError: false, error: null })}>
+            <Text>Try again</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    
+    return this.props.children;
+  }
+}
+
+// Usage
+<ErrorBoundary>
+  <TodoListScreen />
+</ErrorBoundary>
+```
+
+## Either Pattern (fp-ts)
+
+```tsx
+// Use fp-ts for Either type
+import { Either, left, right } from 'fp-ts/Either';
+
+// Define error types
+export class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+export class NetworkError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NetworkError';
+  }
+}
+
+// Usage in use cases
+class CreateTodoUseCase {
+  async execute(params: CreateTodoParams): Promise<Either<Error, TodoEntity>> {
+    // Validation
+    if (!params.title?.trim()) {
+      return left(new ValidationError('Title is required'));
+    }
+    
+    try {
+      const todo = await this.repository.create(params);
+      return right(todo);
+    } catch (error) {
+      return left(new NetworkError(`Failed to create todo: ${error}`));
+    }
+  }
+}
+```
+
+## Presentation Layer Handling
+
+```tsx
+// In components or hooks
+const useCreateTodo = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  
+  const createTodo = useCallback(async (title: string) => {
+    setIsLoading(true);
+    setError(null);
+    
+    const result = await createTodoUseCase.execute({ title });
+    
+    result.fold(
+      (err) => {
+        setError(err);
+        setIsLoading(false);
+      },
+      (todo) => {
+        // Handle success
+        setTodos(prev => [...prev, todo]);
+        setIsLoading(false);
+      }
+    );
+  }, []);
+  
+  return { createTodo, isLoading, error };
+};
+
+// In component
+const CreateTodoScreen: React.FC = () => {
+  const { createTodo, isLoading, error } = useCreateTodo();
+  
+  const handleSubmit = async () => {
+    await createTodo(title);
+  };
+  
+  if (error) {
+    return <ErrorView error={error} onRetry={handleSubmit} />;
+  }
+  
+  // ...
+};
+```
+
+## Async Error Handling
+
+```tsx
+// ✅ GOOD: Proper error handling with try-catch
+const fetchTodos = async () => {
+  try {
+    setLoading(true);
+    const todos = await todoRepository.getTodos();
+    setTodos(todos);
+  } catch (error) {
+    if (error instanceof NetworkError) {
+      setError('Network error. Please check your connection.');
+    } else if (error instanceof ServerError) {
+      setError('Server error. Please try again later.');
+    } else {
+      setError('An unexpected error occurred.');
+    }
+    // Log error
+    logError(error);
+  } finally {
+    setLoading(false);
+  }
+};
+```
