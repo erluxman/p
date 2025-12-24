@@ -13,22 +13,24 @@ This project follows **Hexagonal Architecture (Ports & Adapters)**:
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - Firebase CLI: `npm install -g firebase-tools`
 - Firebase project configured
 
 ## Setup
 
 1. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 2. **Configure Firebase:**
+
    ```bash
    # Copy the example firebase config
    cp .firebaserc.example .firebaserc
-   
+
    # Edit .firebaserc with your project ID
    # Then login to Firebase
    firebase login
@@ -44,11 +46,13 @@ This project follows **Hexagonal Architecture (Ports & Adapters)**:
 ### Local Development
 
 Run Firebase emulators:
+
 ```bash
 npm run serve
 ```
 
 This will:
+
 - Build TypeScript
 - Start Firebase emulators
 - Functions available at `http://localhost:5001`
@@ -56,26 +60,31 @@ This will:
 ### Testing
 
 Run all tests:
+
 ```bash
 npm test
 ```
 
 Run unit tests only:
+
 ```bash
 npm run test:unit
 ```
 
 Run integration tests:
+
 ```bash
 npm run test:integration
 ```
 
 Watch mode:
+
 ```bash
 npm run test:watch
 ```
 
 Coverage:
+
 ```bash
 npm run test:coverage
 ```
@@ -90,11 +99,13 @@ npm run lint:fix
 ## Deployment
 
 Deploy all functions:
+
 ```bash
 npm run deploy
 ```
 
 Deploy specific function:
+
 ```bash
 firebase deploy --only functions:helloWorldFunction
 ```
@@ -155,6 +166,7 @@ firebase functions:config:set someservice.key="THE API KEY"
 ```
 
 Access in code:
+
 ```typescript
 const config = functions.config();
 const apiKey = config.someservice.key;
@@ -165,6 +177,7 @@ const apiKey = config.someservice.key;
 This project has GitHub Actions CI/CD configured. See [CI_CD_SETUP.md](./CI_CD_SETUP.md) for setup instructions.
 
 The workflow automatically:
+
 - Runs tests on every push/PR
 - Deploys to Firebase on pushes to `main` branch
 
@@ -174,4 +187,3 @@ The workflow automatically:
 - [Workflow Protocol](../../../workflow_protocol.md)
 - [Firebase Functions Platform Guide](../../../ai-dev/platform_guides/backend_firebase_functions.md)
 - [CI/CD Setup Guide](./CI_CD_SETUP.md)
-
