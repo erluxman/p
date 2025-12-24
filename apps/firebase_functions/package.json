@@ -15,8 +15,8 @@
     "test:integration": "jest --testPathPattern=integration",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix"
+    "lint": "eslint --config .eslintrc.js src --ext .ts",
+    "lint:fix": "eslint --config .eslintrc.js src --ext .ts --fix"
   },
   "engines": {
     "node": "18"
@@ -40,4 +40,3 @@
     "typescript": "^5.3.3"
   }
 }
-
