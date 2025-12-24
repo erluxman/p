@@ -8,3 +8,234 @@ globs:
 
 - No business logic in UI layer.
 - Handle loading/error/empty states explicitly in UI.
+- Prefer small, composable UI components; avoid large "god" components.
+- Use Jetpack Compose for new UI (preferred) or traditional Views.
+
+## Compose UI Components
+
+```kotlin
+// ✅ GOOD: Composable with explicit state handling
+@Composable
+fun TodoItem(
+    todo: TodoEntity,
+    onToggle: (String) -> Unit,
+    onDelete: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = todo.title,
+            modifier = Modifier.weight(1f)
+        )
+        IconButton(onClick = { onToggle(todo.id) }) {
+            Icon(
+                imageVector = if (todo.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                contentDescription = "Toggle todo completion"
+            )
+        }
+        IconButton(onClick = { onDelete(todo.id) }) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = "Delete todo"
+            )
+        }
+    }
+}
+
+// ❌ BAD: Business logic in composable
+@Composable
+fun TodoItem(todo: TodoEntity) {
+    // Business logic here - WRONG!
+    val filteredTodos = todo.filter { it.isCompleted } // Should be in use case
+    // ...
+}
+```
+
+## State Handling in Compose
+
+```kotlin
+// ✅ GOOD: Explicit loading/error/empty states
+@Composable
+fun TodoListScreen(
+    viewModel: TodoViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    when (uiState) {
+        is TodoUiState.Loading -> {
+            CircularProgressIndicator()
+        }
+        is TodoUiState.Error -> {
+            ErrorMessage(
+                message = uiState.message,
+                onRetry = { viewModel.loadTodos() }
+            )
+        }
+        is TodoUiState.Empty -> {
+            EmptyState(message = "No todos yet")
+        }
+        is TodoUiState.Success -> {
+            LazyColumn {
+                items(uiState.todos) { todo ->
+                    TodoItem(
+                        todo = todo,
+                        onToggle = { viewModel.toggleTodo(it) },
+                        onDelete = { viewModel.deleteTodo(it) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ❌ BAD: No explicit state handling
+@Composable
+fun TodoListScreen(viewModel: TodoViewModel) {
+    val todos by viewModel.todos.collectAsState()
+    // What if loading? What if error? What if empty?
+    LazyColumn {
+        items(todos) { /* ... */ }
+    }
+}
+```
+
+## View-based UI Components
+
+```kotlin
+// ✅ GOOD: View with explicit state handling
+class TodoListActivity : AppCompatActivity() {
+    private lateinit var viewModel: TodoViewModel
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var progressBar: ProgressBar
+    private lateinit var errorView: TextView
+    private lateinit var emptyView: TextView
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_todo_list)
+
+        setupViews()
+        observeViewModel()
+    }
+
+    private fun observeViewModel() {
+        viewModel.uiState.observe(this) { state ->
+            when (state) {
+                is TodoUiState.Loading -> {
+                    progressBar.visibility = View.VISIBLE
+                    recyclerView.visibility = View.GONE
+                    errorView.visibility = View.GONE
+                    emptyView.visibility = View.GONE
+                }
+                is TodoUiState.Error -> {
+                    progressBar.visibility = View.GONE
+                    recyclerView.visibility = View.GONE
+                    errorView.visibility = View.VISIBLE
+                    errorView.text = state.message
+                }
+                is TodoUiState.Empty -> {
+                    progressBar.visibility = View.GONE
+                    recyclerView.visibility = View.GONE
+                    errorView.visibility = View.GONE
+                    emptyView.visibility = View.VISIBLE
+                }
+                is TodoUiState.Success -> {
+                    progressBar.visibility = View.GONE
+                    recyclerView.visibility = View.VISIBLE
+                    errorView.visibility = View.GONE
+                    emptyView.visibility = View.GONE
+                    adapter.submitList(state.todos)
+                }
+            }
+        }
+    }
+}
+```
+
+## Business Logic Separation
+
+```kotlin
+// ✅ GOOD: UI dispatches actions to ViewModel
+@Composable
+fun CreateTodoScreen(
+    viewModel: CreateTodoViewModel = hiltViewModel(),
+    onNavigateBack: () -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+
+    Column {
+        TextField(
+            value = title,
+            onValueChange = { title = it },
+            label = { Text("Todo title") }
+        )
+        Button(
+            onClick = {
+                viewModel.createTodo(title)
+                onNavigateBack()
+            }
+        ) {
+            Text("Create")
+        }
+    }
+}
+
+// ❌ BAD: Business logic in UI
+@Composable
+fun CreateTodoScreen() {
+    var title by remember { mutableStateOf("") }
+
+    Button(onClick = {
+        // Direct repository call - WRONG!
+        viewModelScope.launch {
+            repository.create(title) // Should be in use case
+        }
+    }) {
+        Text("Create")
+    }
+}
+```
+
+## Accessibility
+
+```kotlin
+// ✅ GOOD: Accessibility support
+@Composable
+fun TodoItem(todo: TodoEntity, onToggle: (String) -> Unit) {
+    Row(
+        modifier = Modifier
+            .semantics {
+                contentDescription = "Todo: ${todo.title}, ${if (todo.isCompleted) "completed" else "not completed"}"
+                stateDescription = if (todo.isCompleted) "Completed" else "Not completed"
+            }
+    ) {
+        Text(todo.title)
+        IconButton(
+            onClick = { onToggle(todo.id) },
+            modifier = Modifier.semantics {
+                contentDescription = "Toggle todo completion"
+            }
+        ) {
+            Icon(/* ... */)
+        }
+    }
+}
+```
+
+## UI Best Practices
+
+- Use `@Composable` functions for Compose UI.
+- Use `remember` and `mutableStateOf` for local UI state.
+- Use ViewModel for UI state that survives configuration changes.
+- Handle all states: loading, success, error, empty.
+- Use semantic modifiers for accessibility.
+- Prefer `LazyColumn`/`LazyRow` over `Column`/`Row` for lists.
+- Use `Modifier` for styling and layout.
+- Keep composables small and focused (single responsibility).
+- Extract reusable UI components.
+- Use `@Preview` for component previews in Compose.

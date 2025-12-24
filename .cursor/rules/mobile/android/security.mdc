@@ -6,6 +6,281 @@ globs:
 
 # Native Android: Security
 
-- Never hardcode secrets.
-- Never log tokens, passwords, or PII.
+- Never hardcode secrets, API keys, or tokens in source code.
+- Use Android Keystore for secure key storage.
+- Use EncryptedSharedPreferences for sensitive data.
+- Implement certificate pinning for production builds.
+- Never log sensitive data (tokens, passwords, PII).
+- Validate and sanitize all external input.
 - Auth/authz changes require explicit approval.
+
+## Secure Storage
+
+```kotlin
+// ✅ GOOD: Use EncryptedSharedPreferences for sensitive data
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
+
+class SecureStorage(context: Context) {
+    private val masterKey = MasterKey.Builder(context)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
+
+    private val sharedPreferences = EncryptedSharedPreferences.create(
+        context,
+        "secure_prefs",
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
+
+    fun saveToken(token: String) {
+        sharedPreferences.edit()
+            .putString("auth_token", token)
+            .apply()
+    }
+
+    fun getToken(): String? {
+        return sharedPreferences.getString("auth_token", null)
+    }
+
+    fun deleteToken() {
+        sharedPreferences.edit()
+            .remove("auth_token")
+            .apply()
+    }
+}
+
+// ❌ BAD: Storing tokens in regular SharedPreferences (not encrypted)
+val prefs = context.getSharedPreferences("prefs", Context.MODE_PRIVATE)
+prefs.edit().putString("auth_token", token).apply() // Not encrypted!
+```
+
+## Android Keystore
+
+```kotlin
+// ✅ GOOD: Use Android Keystore for cryptographic keys
+import java.security.KeyStore
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+
+class KeyStoreManager {
+    private val keyStore = KeyStore.getInstance("AndroidKeyStore").apply {
+        load(null)
+    }
+
+    private val keyAlias = "my_app_key"
+
+    fun getOrCreateKey(): SecretKey {
+        if (!keyStore.containsAlias(keyAlias)) {
+            val keyGenerator = KeyGenerator.getInstance(
+                KeyProperties.KEY_ALGORITHM_AES,
+                "AndroidKeyStore"
+            )
+            val keyGenParameterSpec = KeyGenParameterSpec.Builder(
+                keyAlias,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+            )
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .build()
+
+            keyGenerator.init(keyGenParameterSpec)
+            keyGenerator.generateKey()
+        }
+
+        return keyStore.getKey(keyAlias, null) as SecretKey
+    }
+}
+```
+
+## Configuration Management
+
+```kotlin
+// ✅ GOOD: Use BuildConfig and gradle.properties for configuration
+// build.gradle.kts
+android {
+    buildTypes {
+        release {
+            buildConfigField("String", "API_BASE_URL", "\"https://api.example.com\"")
+            buildConfigField("String", "API_KEY", project.findProperty("API_KEY") as String)
+        }
+        debug {
+            buildConfigField("String", "API_BASE_URL", "\"https://api-dev.example.com\"")
+            buildConfigField("String", "API_KEY", project.findProperty("API_KEY_DEV") as String)
+        }
+    }
+}
+
+// Usage
+val apiUrl = BuildConfig.API_BASE_URL
+val apiKey = BuildConfig.API_KEY
+
+// gradle.properties (not committed to git)
+// API_KEY=your_production_api_key
+// API_KEY_DEV=your_dev_api_key
+
+// ❌ BAD: Hardcoded secrets
+val API_KEY = "sk_live_1234567890" // Never do this!
+```
+
+## Certificate Pinning
+
+```kotlin
+// ✅ GOOD: Certificate pinning for production
+import okhttp3.CertificatePinner
+import okhttp3.OkHttpClient
+
+class ApiClient {
+    private val client = OkHttpClient.Builder()
+        .certificatePinner(
+            CertificatePinner.Builder()
+                .add("api.example.com", "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+                .add("api.example.com", "sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=")
+                .build()
+        )
+        .build()
+
+    fun makeRequest(url: String): Response {
+        val request = Request.Builder()
+            .url(url)
+            .build()
+        return client.newCall(request).execute()
+    }
+}
+```
+
+## Input Validation
+
+```kotlin
+// ✅ GOOD: Validate and sanitize input
+import android.text.TextUtils
+import java.util.regex.Pattern
+
+class InputValidator {
+    companion object {
+        private val EMAIL_PATTERN = Pattern.compile(
+            "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+        )
+
+        fun validateEmail(email: String): Boolean {
+            if (TextUtils.isEmpty(email)) return false
+            return EMAIL_PATTERN.matcher(email).matches()
+        }
+
+        fun sanitizeInput(input: String): String {
+            // Remove potentially dangerous characters
+            return input
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#x27;")
+                .trim()
+        }
+    }
+}
+
+// In use case
+class CreateTodoUseCase {
+    fun execute(title: String): Result<TodoEntity> {
+        val sanitizedTitle = InputValidator.sanitizeInput(title)
+        if (sanitizedTitle.isEmpty()) {
+            return Result.failure(ValidationError("Title cannot be empty"))
+        }
+        // ...
+    }
+}
+```
+
+## Safe Logging
+
+```kotlin
+// ✅ GOOD: Redact sensitive data from logs
+import android.util.Log
+
+object SafeLogger {
+    private const val TAG = "App"
+
+    fun logError(error: Throwable, context: Map<String, Any?> = emptyMap()) {
+        val safeContext = context.toMutableMap()
+
+        // Redact sensitive fields
+        safeContext.keys.forEach { key ->
+            if (key.contains("token", ignoreCase = true) ||
+                key.contains("password", ignoreCase = true) ||
+                key.contains("secret", ignoreCase = true) ||
+                key.contains("key", ignoreCase = true)
+            ) {
+                safeContext[key] = "[REDACTED]"
+            }
+        }
+
+        Log.e(TAG, error.message, error)
+        Log.d(TAG, "Context: $safeContext")
+    }
+}
+
+// ❌ BAD: Logging sensitive data
+Log.d(TAG, "User token: $token") // Never log tokens!
+```
+
+## ProGuard/R8 Obfuscation
+
+```kotlin
+// ✅ GOOD: Enable code obfuscation for production
+// build.gradle.kts
+android {
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+}
+
+// proguard-rules.pro
+-keep class com.erluxman.productive.core.domain.** { *; }
+-keep class com.erluxman.productive.core.application.** { *; }
+-dontwarn okhttp3.**
+```
+
+## Network Security
+
+```kotlin
+// ✅ GOOD: Network security configuration
+// res/xml/network_security_config.xml
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">api.example.com</domain>
+        <pin-set expiration="2025-12-31">
+            <pin digest="SHA-256">AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</pin>
+            <pin digest="SHA-256">BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=</pin>
+        </pin-set>
+    </domain-config>
+</network-security-config>
+
+// AndroidManifest.xml
+<application
+    android:networkSecurityConfig="@xml/network_security_config"
+    ...>
+</application>
+```
+
+## Security Best Practices
+
+- Use `EncryptedSharedPreferences` for sensitive data storage.
+- Use Android Keystore for cryptographic operations.
+- Never store secrets in source code or version control.
+- Use BuildConfig for environment-specific configuration.
+- Implement certificate pinning for production.
+- Validate and sanitize all user input.
+- Redact sensitive data from logs.
+- Enable ProGuard/R8 obfuscation for release builds.
+- Use HTTPS only (no cleartext traffic in production).
+- Keep dependencies up to date for security patches.
+- Review and update security configurations regularly.

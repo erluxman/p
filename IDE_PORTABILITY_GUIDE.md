@@ -35,7 +35,7 @@ If you use Cursor-specific configurations (like `.cursor/rules/` or `.cursorrule
 
 **Keep all guidelines in portable markdown files**, then create IDE-specific wrappers that reference them.
 
-```
+```text
 project-root/
 ├── docs/                           # Portable documentation
 │   ├── architecture.md            # Architecture guidelines
@@ -228,7 +228,7 @@ Key principles:
 
 ### Option A: Centralized Docs (Best for Portability)
 
-```
+```text
 project-root/
 ├── docs/                           # All portable guidelines
 │   ├── architecture/
@@ -256,7 +256,7 @@ project-root/
 
 ### Option B: Current Structure (Simpler)
 
-```
+```text
 project-root/
 ├── project_constitution.md         # Portable
 ├── workflow_protocol.md            # Portable
@@ -350,7 +350,7 @@ For complete guidelines, see the referenced files above.
 
 ## Best Practices for Portability
 
-### ✅ DO:
+### ✅ DO
 
 1. **Keep core guidelines in portable markdown files**
 
@@ -372,7 +372,7 @@ For complete guidelines, see the referenced files above.
    - Include portable files in git
    - IDE-specific configs can be optional
 
-### ❌ DON'T:
+### ❌ DON'T
 
 1. **Don't put core rules in IDE-specific files**
 
@@ -407,7 +407,7 @@ When switching IDEs:
 
 ### Step 1: Identify Portable Files
 
-```
+```text
 ✅ project_constitution.md (portable)
 ✅ workflow_protocol.md (portable)
 ✅ promotsamples.md (mostly portable)
@@ -444,18 +444,18 @@ Reference these files for complete guidelines:
 
 ## Current Project Status
 
-### ✅ Already Portable:
+### ✅ Already Portable
 
 - `project_constitution.md` - Works with any IDE
 - `workflow_protocol.md` - Works with any IDE
 - `promotsamples.md` - Works with any IDE (minor syntax differences)
 
-### ⚠️ Cursor-Specific:
+### ⚠️ Cursor-Specific
 
 - `.cursorrules` - Only works with Cursor
 - `.cursor/rules/` (if created) - Only works with Cursor
 
-### 💡 Recommendation:
+### 💡 Recommendation
 
 Make `.cursorrules` a thin wrapper that references the portable files. This way:
 

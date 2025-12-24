@@ -7,4 +7,288 @@ globs:
 # Native Android: Testing
 
 - Non-trivial logic must have tests.
-- Bug fixes require a failing repro test first.
+- Bug fixes require a repro test that fails before the fix.
+- Prefer tests that assert behavior, not implementation details.
+- Domain layer: 100% coverage target.
+- Application layer: 80% coverage target.
+- Infrastructure layer: 70% coverage target.
+- Presentation layer: 60% coverage target.
+
+## Test Structure
+
+```text
+app/src/
+├── test/                    # Unit tests (run on JVM)
+│   ├── java/.../domain/
+│   ├── java/.../application/
+│   └── java/.../infrastructure/
+└── androidTest/             # Instrumented tests (run on device/emulator)
+    ├── java/.../presentation/  # UI tests
+    └── java/.../integration/   # Integration tests
+```
+
+## Unit Tests
+
+Unit tests run on the JVM and don't require an Android device. Use JUnit, Mockito, or MockK for mocking.
+
+```kotlin
+// app/src/test/java/com/erluxman/productive/domain/use_cases/CreateTodoUseCaseTest.kt
+package com.erluxman.productive.domain.use_cases
+
+import com.erluxman.productive.core.domain.entities.TodoEntity
+import com.erluxman.productive.core.domain.repositories.TodoRepository
+import com.erluxman.productive.core.domain.use_cases.CreateTodoUseCase
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+
+class CreateTodoUseCaseTest {
+    private lateinit var repository: TodoRepository
+    private lateinit var useCase: CreateTodoUseCase
+
+    @Before
+    fun setup() {
+        repository = mockk()
+        useCase = CreateTodoUseCase(repository)
+    }
+
+    @Test
+    fun `should create todo with valid input`() = runTest {
+        // Arrange
+        val todo = TodoEntity(id = "1", title = "Test Todo", isCompleted = false)
+        coEvery { repository.create(any()) } returns Result.success(todo)
+
+        // Act
+        val result = useCase.execute("Test Todo")
+
+        // Assert
+        assertTrue(result.isSuccess)
+        result.onSuccess { createdTodo ->
+            assertEquals("Test Todo", createdTodo.title)
+        }
+        coVerify(exactly = 1) { repository.create(any()) }
+    }
+
+    @Test
+    fun `should fail when title is empty`() = runTest {
+        // Act
+        val result = useCase.execute("")
+
+        // Assert
+        assertTrue(result.isFailure)
+        result.onFailure { error ->
+            assertTrue(error.message?.contains("required") == true)
+        }
+    }
+}
+```
+
+## UI Tests (Compose)
+
+For Jetpack Compose UI, use Compose Testing APIs.
+
+```kotlin
+// app/src/androidTest/java/com/erluxman/productive/presentation/screens/TodoListScreenTest.kt
+package com.erluxman.productive.presentation.screens
+
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import com.erluxman.productive.core.domain.entities.TodoEntity
+import org.junit.Rule
+import org.junit.Test
+
+class TodoListScreenTest {
+    @get:Rule
+    val composeTestRule = createComposeRule()
+
+    @Test
+    fun displaysTodoTitle() {
+        // Arrange
+        val todo = TodoEntity(id = "1", title = "Test Todo", isCompleted = false)
+
+        // Act
+        composeTestRule.setContent {
+            TodoItem(todo = todo, onToggle = {}, onDelete = {})
+        }
+
+        // Assert
+        composeTestRule.onNodeWithText("Test Todo").assertIsDisplayed()
+    }
+
+    @Test
+    fun callsOnToggleWhenToggleButtonIsPressed() {
+        // Arrange
+        var toggleCalled = false
+        val todo = TodoEntity(id = "1", title = "Test Todo", isCompleted = false)
+
+        // Act
+        composeTestRule.setContent {
+            TodoItem(
+                todo = todo,
+                onToggle = { toggleCalled = true },
+                onDelete = {}
+            )
+        }
+        composeTestRule.onNodeWithText("Toggle").performClick()
+
+        // Assert
+        assertTrue(toggleCalled)
+    }
+
+    @Test
+    fun displaysCompletedStateCorrectly() {
+        // Arrange
+        val completedTodo = TodoEntity(id = "1", title = "Test Todo", isCompleted = true)
+
+        // Act
+        composeTestRule.setContent {
+            TodoItem(todo = completedTodo, onToggle = {}, onDelete = {})
+        }
+
+        // Assert
+        composeTestRule.onNodeWithText("✓").assertIsDisplayed()
+    }
+}
+```
+
+## UI Tests (View-based)
+
+For traditional View-based UI, use Espresso.
+
+```kotlin
+// app/src/androidTest/java/com/erluxman/productive/presentation/activities/MainActivityTest.kt
+package com.erluxman.productive.presentation.activities
+
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.action.ViewActions.typeText
+import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
+import androidx.test.espresso.matcher.ViewMatchers.withId
+import androidx.test.espresso.matcher.ViewMatchers.withText
+import androidx.test.ext.junit.rules.ActivityScenarioRule
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.erluxman.productive.R
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+
+@RunWith(AndroidJUnit4::class)
+class MainActivityTest {
+    @get:Rule
+    val activityRule = ActivityScenarioRule(MainActivity::class.java)
+
+    @Test
+    fun displaysTodoList() {
+        // Assert
+        onView(withId(R.id.todo_list)).check(matches(isDisplayed()))
+    }
+
+    @Test
+    fun createsTodoWhenSubmitButtonIsClicked() {
+        // Act
+        onView(withId(R.id.todo_title_input))
+            .perform(typeText("New Todo"))
+        onView(withId(R.id.submit_button))
+            .perform(click())
+
+        // Assert
+        onView(withText("New Todo")).check(matches(isDisplayed()))
+    }
+}
+```
+
+## Integration Tests
+
+Integration tests verify interactions between multiple components and may require a device or emulator.
+
+```kotlin
+// app/src/androidTest/java/com/erluxman/productive/integration/TodoFlowIntegrationTest.kt
+package com.erluxman.productive.integration
+
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.erluxman.productive.core.domain.repositories.TodoRepository
+import com.erluxman.productive.infrastructure.repositories.TodoRepositoryImpl
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+
+@RunWith(AndroidJUnit4::class)
+class TodoFlowIntegrationTest {
+    private lateinit var repository: TodoRepository
+
+    @Before
+    fun setup() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        repository = TodoRepositoryImpl(context)
+    }
+
+    @After
+    fun tearDown() = runTest {
+        // Clean up test data
+        repository.deleteAll()
+    }
+
+    @Test
+    fun createAndRetrieveTodo() = runTest {
+        // Arrange
+        val todoTitle = "Integration Test Todo"
+
+        // Act
+        val createResult = repository.create(todoTitle)
+        assertTrue(createResult.isSuccess)
+
+        val createdTodo = createResult.getOrNull()!!
+        val retrieveResult = repository.getById(createdTodo.id)
+
+        // Assert
+        assertTrue(retrieveResult.isSuccess)
+        retrieveResult.onSuccess { todo ->
+            assertEquals(todoTitle, todo.title)
+        }
+    }
+}
+```
+
+## Test Best Practices
+
+- Use `JUnit` for unit tests (runs on JVM).
+- Use `Mockito` or `MockK` for mocking dependencies.
+- Use `kotlinx.coroutines.test` for testing coroutines.
+- Use `androidx.compose.ui.test` for Compose UI tests.
+- Use `Espresso` for View-based UI tests.
+- Use `AndroidJUnit4` runner for instrumented tests.
+- Mock external dependencies (API, database, storage).
+- Test error states and edge cases.
+- Keep tests fast and independent.
+- Use `@Test` annotation for test methods.
+- Use `@Before` and `@After` for setup and teardown.
+- Use descriptive test names with backticks: `` `should create todo with valid input`() ``.
+- Prefer `Result<T>` types in tests to match production code patterns.
+- Use `runTest` from `kotlinx.coroutines.test` for testing suspend functions.
+
+## Running Tests
+
+```bash
+# Run all unit tests
+./gradlew test
+
+# Run all instrumented tests (requires device/emulator)
+./gradlew connectedAndroidTest
+
+# Run specific test class
+./gradlew test --tests "CreateTodoUseCaseTest"
+
+# Run tests with coverage
+./gradlew testDebugUnitTest jacocoTestReport
+```
