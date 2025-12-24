@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions';
 import { helloWorld } from './functions/hello.function';
 import { authenticatedExample } from './functions/authenticated_example.function';
 import { httpAuthenticatedExample } from './functions/http_authenticated_example.function';
+//add comment
 
 const region = 'us-central1';
 
