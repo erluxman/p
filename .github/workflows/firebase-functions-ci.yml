@@ -69,9 +69,6 @@ jobs:
       needs.changes.outputs.firebase_functions == 'true' &&
       github.ref == 'refs/heads/main' &&
       github.event_name == 'push'
-    environment:
-      name: production
-      url: https://console.firebase.google.com/project/productive-78c0e/functions
 
     steps:
       - name: Checkout code
