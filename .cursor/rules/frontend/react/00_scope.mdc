@@ -16,5 +16,6 @@ globs:
 
 - `components.mdc`: component patterns and boundaries
 - `state.mdc`: state management conventions
+- `error_handling.mdc`: Result/Either pattern and error handling
 - `accessibility.mdc`: a11y requirements
 - `testing.mdc`: tests and test structure for frontend
