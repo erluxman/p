@@ -93,7 +93,7 @@ jobs:
         run: npm install -g firebase-tools
 
       - name: Set Cleanup Policy for Artifacts
-        run: firebase functions:artifacts:setpolicy --location=us-central1 --max-old-revisions=1 --max-age=30d --project productive-78c0e --token ${{ secrets.FIREBASE_TOKEN }} || echo "Cleanup policy already set or failed to set (non-critical)"
+        run: firebase functions:artifacts:setpolicy --location=us-central1 --max-age=30d --project productive-78c0e --token ${{ secrets.FIREBASE_TOKEN }} || echo "Cleanup policy already set or failed to set (non-critical)"
         working-directory: apps/backend/firebase_functions
 
       - name: Deploy Firebase Functions
