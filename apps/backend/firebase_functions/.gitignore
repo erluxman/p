@@ -1,6 +1,7 @@
 # Compiled JavaScript files
 lib/
 *.js
+!.eslintrc.js
 *.js.map
 *.d.ts
 *.d.ts.map
