@@ -19,7 +19,7 @@
     "lint:fix": "eslint --config .eslintrc.js src --ext .ts --fix"
   },
   "engines": {
-    "node": "18"
+    "node": "20"
   },
   "keywords": [],
   "author": "",

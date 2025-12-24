@@ -109,7 +109,7 @@ firebase deploy --only functions --project productive-78c0e
 
 ### Tests fail in CI but pass locally
 
-- Check Node.js version (CI uses Node 18)
+- Check Node.js version (CI uses Node 20)
 - Ensure all dependencies are in `package.json` (not just `package-lock.json`)
 - Check for environment-specific issues
 
@@ -122,7 +122,7 @@ firebase deploy --only functions --project productive-78c0e
 
 - **Project ID**: `productive-78c0e`
 - **Region**: `us-central1`
-- **Node Version**: 18 (as specified in `package.json`)
+- **Node Version**: 20 (as specified in `package.json`)
 
 To change the project, update:
 
