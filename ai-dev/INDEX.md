@@ -209,9 +209,7 @@ Located in: `ai-dev/`
 
 ## 8. Enhancement Documentation
 
-- `ai-dev/mobile_platform_enhancement_plan.md` - Mobile enhancement planning
-- `ai-dev/mobile_platform_enhancement_summary.md` - Mobile enhancement completion
-- `ENHANCEMENT_PLAN.md` - Cursor best practices integration
+- `ai-dev/mobile_platform_enhancement_summary.md` - Mobile enhancement completion summary
 - `IDE_PORTABILITY_GUIDE.md` - IDE-agnostic guidelines
 
 ---
