@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import * as functions from 'firebase-functions';
-//test comment
 
 export const helloWorld = async (req: Request, res: Response): Promise<void> => {
   try {
