@@ -22,7 +22,7 @@ jobs:
         with:
           filters: |
             firebase_functions:
-              - 'apps/firebase_functions/**'
+              - 'apps/backend/firebase_functions/**'
 
   test:
     name: Run Tests
