@@ -37,6 +37,7 @@ This project follows **Hexagonal Architecture (Ports & Adapters)**:
    ```
 
 3. **Build the project:**
+
    ```bash
    npm run build
    ```
@@ -112,7 +113,7 @@ firebase deploy --only functions:helloWorldFunction
 
 ## Project Structure
 
-```
+```text
 apps/firebase_functions/
 ├── src/
 │   ├── functions/          # Function entrypoints

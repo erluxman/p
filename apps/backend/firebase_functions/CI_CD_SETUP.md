@@ -18,7 +18,7 @@ To enable deployment, you need to set up the following secret in your GitHub rep
 
 This token is used to authenticate with Firebase during deployment.
 
-#### How to generate:
+#### How to generate
 
 1. **Install Firebase CLI** (if not already installed):
 
