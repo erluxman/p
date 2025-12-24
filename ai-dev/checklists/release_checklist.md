@@ -2,6 +2,8 @@
 
 Use this before publishing to App Store / Play Store / web production or deploying backend services.
 
+**Note**: Use platform-specific checklists **in addition to** this checklist. Pick only the platform(s) you are shipping.
+
 ## Change control
 
 - Version/tag planned (or release identifier recorded).
@@ -38,5 +40,3 @@ Use the relevant platform checklist(s):
 
 - Monitoring/alerts in place for key paths.
 - Rollback procedure documented and tested where feasible.
-
-

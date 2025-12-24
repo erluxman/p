@@ -19,5 +19,3 @@
 
 - Any new permissions reviewed and justified.
 - Permission prompts tested (happy + denial paths).
-
-

@@ -1,27 +1,34 @@
-# Context Management (AI + Human)
+# Context Management
 
-Goal: keep AI performance and correctness high by preventing context drift and rule dilution.
+**Goal**: Prevent context drift and rule dilution.
 
-## When to start a new session
+---
 
-- After completing a milestone or large feature.
-- When instructions are repeated and the AI still forgets.
-- When the AI proposes changes that violate architecture unexpectedly.
+## When to Start New Session
 
-## What to paste / reference at the start of a session
+## Rule
+
+Start new session when:
+
+- Milestone or large feature completed
+- AI forgets repeated instructions
+- AI violates architecture unexpectedly
+
+## Session Start Checklist
+
+## Checklist
+
+Reference at session start:
 
 - `AGENTS.md`
 - `project_constitution.md`
 - `workflow_protocol.md`
-- Relevant `.cursor/rules/**` files (open a file in that area so scoped rules apply)
-- Any relevant entries from:
-  - `ai-dev/milestones.md`
-  - `ai-dev/tech_debt_ledger.md`
-  - `ai-dev/exceptions_log.md`
+- Relevant `.cursor/rules/**` files (open file in that area)
+- Continuity files (only if populated): `milestones.md`, `tech_debt_ledger.md`, `exceptions_log.md`, `GOTCHAS.md`
 
-## Keep scope tight
+## Scope Control
 
-- Work in atomic steps.
-- Prefer 1–3 files per step.
-- Stop when scope expands and re-plan.
-
+- Work in atomic steps (1-3 files per step)
+- Stop when scope expands
+- Re-plan before continuing
+</rule>

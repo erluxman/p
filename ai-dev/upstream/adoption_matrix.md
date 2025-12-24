@@ -63,5 +63,3 @@ This is the “why” behind what we adopt from upstream sources.
 - Always-on core workflow + security + constraints
 - Portable SSOT docs + checklists + continuity logs
 - Canonical symlink roots + script-driven mapping
-
-
