@@ -93,9 +93,28 @@ jobs:
           arch: x86_64
           profile: Nexus 6
           script: |
-            cd ${{ github.workspace }}/apps/mobile/android
-            chmod +x ./gradlew
-            ./gradlew connectedDebugAndroidTest
+            ANDROID_DIR="${{ github.workspace }}/apps/mobile/android"
+            GRADLEW="$ANDROID_DIR/gradlew"
+
+            echo "Workspace: ${{ github.workspace }}"
+            echo "Android dir: $ANDROID_DIR"
+            echo "Current dir: $(pwd)"
+
+            if [ ! -d "$ANDROID_DIR" ]; then
+              echo "Error: Android directory not found: $ANDROID_DIR"
+              ls -la ${{ github.workspace }}/apps/mobile/ || true
+              exit 1
+            fi
+
+            if [ ! -f "$GRADLEW" ]; then
+              echo "Error: gradlew not found: $GRADLEW"
+              ls -la "$ANDROID_DIR" || true
+              exit 1
+            fi
+
+            chmod +x "$GRADLEW"
+            cd "$ANDROID_DIR"
+            "$GRADLEW" connectedDebugAndroidTest
 
       - name: Upload instrumented test results
         uses: actions/upload-artifact@v4
