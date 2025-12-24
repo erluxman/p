@@ -1,10 +1,10 @@
 ---
-description: Native iOS security rules.
+description: Native Android security rules.
 globs:
-  - "apps/ios/**"
+  - "apps/mobile/android/**"
 ---
 
-# Native iOS: Security
+# Native Android: Security
 
 - Never hardcode secrets.
 - Never log tokens, passwords, or PII.

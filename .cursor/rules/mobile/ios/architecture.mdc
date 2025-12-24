@@ -1,9 +1,9 @@
 ---
 description: Native iOS architecture boundaries.
 globs:
-  - "apps/ios/**/Core/**"
-  - "apps/ios/**/Infrastructure/**"
-  - "apps/ios/**/Presentation/**"
+  - "apps/mobile/ios/**/Core/**"
+  - "apps/mobile/ios/**/Infrastructure/**"
+  - "apps/mobile/ios/**/Presentation/**"
 ---
 
 # Native iOS: Architecture

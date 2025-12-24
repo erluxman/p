@@ -1,7 +1,7 @@
 ---
 description: Native Android testing expectations.
 globs:
-  - "apps/android/**"
+  - "apps/mobile/android/**"
 ---
 
 # Native Android: Testing

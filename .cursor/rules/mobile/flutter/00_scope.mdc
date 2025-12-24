@@ -2,19 +2,19 @@
 description: Flutter rules index (split by concern so irrelevant rules don't load).
 globs:
   - "flutter_app/**"
-  - "apps/flutter/**"
+  - "apps/mobile/flutter/**"
 ---
 
 # Mobile: Flutter (Index)
 
 ## Path convention (for scoped rules)
 
-- Canonical path: `apps/flutter/` (symlinked to the real Flutter app directory)
+- Canonical path: `apps/mobile/flutter/` (symlinked to the real Flutter app directory)
 - Real path (current repo): `flutter_app/`
 - Code roots:
-  - Domain/Application: `apps/flutter/lib/core/**` (or `flutter_app/lib/core/**`)
-  - Infrastructure: `apps/flutter/lib/infrastructure/**`
-  - Presentation: `apps/flutter/lib/presentation/**`
+  - Domain/Application: `apps/mobile/flutter/lib/core/**` (or `flutter_app/lib/core/**`)
+  - Infrastructure: `apps/mobile/flutter/lib/infrastructure/**`
+  - Presentation: `apps/mobile/flutter/lib/presentation/**`
 
 ## Rule files (by concern)
 

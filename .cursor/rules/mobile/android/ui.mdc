@@ -1,7 +1,7 @@
 ---
 description: Native Android UI rules (applies to presentation layer only).
 globs:
-  - "apps/android/**/presentation/**"
+  - "apps/mobile/android/**/presentation/**"
 ---
 
 # Native Android: UI

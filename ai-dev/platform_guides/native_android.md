@@ -2,7 +2,7 @@
 
 ## Root (canonical)
 
-- **Use this root everywhere**: `apps/android/`
+- **Use this root everywhere**: `apps/mobile/android/`
 - If the real folder name differs, create a symlink so docs/rules do not change.
 
 ## Code layout (recommended)
@@ -10,7 +10,7 @@
 Recommended “from day 1” layout (layer-first, hexagonal):
 
 ```text
-apps/android/
+apps/mobile/android/
   app/
     src/main/
       java|kotlin/<org>/<app>/
@@ -36,4 +36,3 @@ apps/android/
 - Keep UI in `presentation/`
 - Keep business logic in `core/`
 - Keep Android/framework details in `infrastructure/` + `presentation/`
-

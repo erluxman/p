@@ -2,9 +2,9 @@
 description: Flutter Riverpod rules. Applies only to provider/state paths.
 globs:
   - "flutter_app/lib/presentation/state/**"
-  - "apps/flutter/lib/presentation/state/**"
+  - "apps/mobile/flutter/lib/presentation/state/**"
   - "flutter_app/lib/presentation/**/providers/**"
-  - "apps/flutter/lib/presentation/**/providers/**"
+  - "apps/mobile/flutter/lib/presentation/**/providers/**"
 ---
 
 # Flutter: Riverpod (State)

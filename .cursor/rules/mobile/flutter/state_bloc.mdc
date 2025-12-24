@@ -2,9 +2,9 @@
 description: Flutter BLoC rules. Applies only to state layer paths.
 globs:
   - "flutter_app/lib/presentation/state/**"
-  - "apps/flutter/lib/presentation/state/**"
+  - "apps/mobile/flutter/lib/presentation/state/**"
   - "flutter_app/lib/presentation/**/bloc/**"
-  - "apps/flutter/lib/presentation/**/bloc/**"
+  - "apps/mobile/flutter/lib/presentation/**/bloc/**"
 ---
 
 # Flutter: BLoC (State)

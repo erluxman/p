@@ -2,7 +2,7 @@
 
 ## Build & smoke
 
-- Release build succeeds from `apps/ios/` (Xcode build/archive).
+- Release build succeeds from `apps/mobile/ios/` (Xcode build/archive).
 - App launches and critical flows work on device/simulator.
 
 ## Versioning
@@ -17,5 +17,3 @@
 
 - Privacy strings (Info.plist) updated for any new permissions.
 - Permission prompts tested (allow + deny).
-
-

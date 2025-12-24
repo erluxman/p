@@ -1,7 +1,7 @@
 ---
 description: Native iOS UI rules (applies to Presentation layer only).
 globs:
-  - "apps/ios/**/Presentation/**"
+  - "apps/mobile/ios/**/Presentation/**"
 ---
 
 # Native iOS: UI

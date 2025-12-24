@@ -2,9 +2,9 @@
 description: Flutter authentication rules. Only applies when working in auth-related code.
 globs:
   - "flutter_app/lib/**/auth/**"
-  - "apps/flutter/lib/**/auth/**"
+  - "apps/mobile/flutter/lib/**/auth/**"
   - "flutter_app/lib/**/authentication/**"
-  - "apps/flutter/lib/**/authentication/**"
+  - "apps/mobile/flutter/lib/**/authentication/**"
 ---
 
 # Flutter: Authentication

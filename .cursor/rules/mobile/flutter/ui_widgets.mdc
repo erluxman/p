@@ -2,9 +2,9 @@
 description: Flutter UI/widget conventions. Applies to widgets/screens only.
 globs:
   - "flutter_app/lib/presentation/widgets/**"
-  - "apps/flutter/lib/presentation/widgets/**"
+  - "apps/mobile/flutter/lib/presentation/widgets/**"
   - "flutter_app/lib/presentation/screens/**"
-  - "apps/flutter/lib/presentation/screens/**"
+  - "apps/mobile/flutter/lib/presentation/screens/**"
 ---
 
 # Flutter: UI Widgets

@@ -26,7 +26,7 @@ ai-dev/                    # portable AI governance + checklists + logs
 Notes:
 
 - Treat these canonical roots as the **only** roots referenced by docs and rules.
-- If the real folder has a different name (e.g., `flutter_app/`), create a symlink to the canonical path (e.g., `apps/flutter/`) using `scripts/platform_paths.json` + `scripts/apply_symlinks.py`.
+- If the real folder has a different name (e.g., `flutter_app/`), create a symlink to the canonical path (e.g., `apps/mobile/flutter/`) using `scripts/platform_paths.json` + `scripts/apply_symlinks.py`.
 - Single-platform repos can omit unused folders; the goal is consistency when you add more platforms later.
 
 ## Inside each platform/service: layer-first layout
@@ -90,11 +90,9 @@ Within each platform root, prefer **layer-first** structure so paths imply “wh
 
 ## Concern folders (optional, when it helps scoping)
 
-If a module grows large, introduce **concern folders** *within a layer*:
+If a module grows large, introduce **concern folders** _within a layer_:
 
 - `presentation/state/auth/**` vs `presentation/state/todos/**`
 - `infrastructure/networking/**` vs `infrastructure/storage/**`
 
 This improves rule scoping and keeps AI from mixing concerns.
-
-

@@ -4,8 +4,8 @@ This guide describes how Flutter work is organized and how rules apply.
 
 ## Root (canonical)
 
-- **Use this root everywhere**: `apps/flutter/`
-- Implementation detail in this repo: `apps/flutter/` → `flutter_app/` (symlink managed by `scripts/platform_paths.json`)
+- **Use this root everywhere**: `apps/mobile/flutter/`
+- Implementation detail in this repo: `apps/mobile/flutter/` → `flutter_app/` (symlink managed by `scripts/platform_paths.json`)
 
 ## Code layout (recommended)
 
@@ -14,7 +14,7 @@ This layout is aligned with `project_constitution.md` and designed to trigger th
 Recommended “from day 1” layout:
 
 ```text
-apps/flutter/
+apps/mobile/flutter/
   lib/
     core/
       domain/
@@ -52,4 +52,3 @@ Because the layout is layer-first, Cursor can scope rules tightly:
 - `lib/presentation/state/**` triggers state rules (BLoC/Riverpod)
 - `lib/presentation/widgets/**` triggers UI widget rules
 - `lib/infrastructure/**` triggers networking/infrastructure rules
-

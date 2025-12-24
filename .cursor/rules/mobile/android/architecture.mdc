@@ -1,9 +1,9 @@
 ---
 description: Native Android architecture boundaries.
 globs:
-  - "apps/android/**/core/**"
-  - "apps/android/**/infrastructure/**"
-  - "apps/android/**/presentation/**"
+  - "apps/mobile/react_native/android/**/core/**"
+  - "apps/mobile/react_native/android/**/infrastructure/**"
+  - "apps/mobile/android/**/presentation/**"
 ---
 
 # Native Android: Architecture
