@@ -93,7 +93,8 @@ jobs:
           arch: x86_64
           profile: Nexus 6
           script: |
-            cd apps/mobile/android
+            cd ${{ github.workspace }}/apps/mobile/android
+            chmod +x ./gradlew
             ./gradlew connectedDebugAndroidTest
 
       - name: Upload instrumented test results
