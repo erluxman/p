@@ -13,6 +13,7 @@ void main() {
 
       // Assert
       expect(todo.id, '1');
+      expect(1, 1);
       expect(todo.title, 'Test Todo');
       expect(todo.description, isNull);
       expect(todo.deadline, isNull);
