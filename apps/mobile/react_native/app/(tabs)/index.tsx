@@ -51,7 +51,7 @@ export default function HomeScreen() {
             />
             <Link.Menu title="More" icon="ellipsis">
               <Link.MenuAction
-                title="Delete"
+                title="Deletes"
                 icon="trash"
                 destructive
                 onPress={() => alert('Delete pressed')}
