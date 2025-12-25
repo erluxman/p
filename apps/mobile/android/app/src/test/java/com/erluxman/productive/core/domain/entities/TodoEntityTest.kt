@@ -17,6 +17,7 @@ class TodoEntityTest {
         // Then
         assertTrue(toggled.isCompleted)
         assertEquals(todo.id, toggled.id)
+        assertEquals(true, false)
         assertEquals(todo.title, toggled.title)
         assertEquals(todo.createdAt, toggled.createdAt)
     }
