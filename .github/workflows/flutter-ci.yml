@@ -176,18 +176,32 @@ jobs:
       - name: Boot iOS simulator
         run: |
           xcrun simctl boot "iPhone 15" 2>/dev/null || echo "Simulator may already be booted"
-          sleep 10
+          open -a Simulator || echo "Simulator app may already be open"
         working-directory: apps/mobile/flutter
 
       - name: Wait for simulator to be ready
         run: |
-          timeout 60 bash -c 'until xcrun simctl list devices | grep -q "iPhone 15.*Booted"; do sleep 2; done' || true
+          echo "Waiting for simulator to boot..."
+          timeout 120 bash -c 'until xcrun simctl list devices | grep -q "iPhone 15.*Booted"; do sleep 2; done' || true
+          echo "Waiting for Flutter to detect simulator..."
+          sleep 15
+          flutter devices
         working-directory: apps/mobile/flutter
 
       - name: Run iOS integration tests
         run: |
+          echo "Checking available Flutter devices..."
           flutter devices
-          DEVICE_ID=$(flutter devices | grep -i "iphone" | head -1 | awk '{print $5}' | tr -d '()' || echo "iPhone 15")
+          echo "Extracting device ID..."
+          DEVICE_ID=$(flutter devices | grep -i "iphone" | head -1 | awk '{print $NF}' | tr -d '()' || echo "")
+          if [ -z "$DEVICE_ID" ]; then
+            echo "No iPhone device found, trying to get UDID from simctl..."
+            DEVICE_ID=$(xcrun simctl list devices | grep "iPhone 15" | grep "Booted" | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1 || echo "")
+          fi
+          if [ -z "$DEVICE_ID" ]; then
+            echo "Warning: Could not find device ID, using 'ios' as fallback"
+            DEVICE_ID="ios"
+          fi
           echo "Using device: $DEVICE_ID"
           flutter drive \
             --driver=test/integration/infra/driver.dart \
