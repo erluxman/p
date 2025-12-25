@@ -42,9 +42,13 @@ jobs:
 
     - name: Install Dependencies
       run: ./gradlew dependencies
+      working-directory: apps/mobile/android # Correct path
+
 
     - name: Build Debug APK
       run: ./gradlew assembleDebug
+      working-directory: apps/mobile/android # Correct path
 
     - name: Run Unit Tests
       run: ./gradlew test
+      working-directory: apps/mobile/android # Correct path
