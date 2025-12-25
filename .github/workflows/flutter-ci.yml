@@ -120,6 +120,7 @@ jobs:
           heap-size: 600M
           script: |
             cd apps/mobile/flutter
+            echo "Current directory: $(pwd)"
             flutter devices
             flutter drive \
               --driver=test/integration/infra/driver.dart \

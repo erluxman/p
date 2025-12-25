@@ -60,6 +60,8 @@ Future<void> _createTodo(WidgetTester tester, String title) async {
 
   await tester.enterText(titleField, title);
   await tester.pumpAndSettle();
+  // ignore: avoid_print
+  print('titleField: $titleField');
 
   // Tap Save button
   final saveButton = find.text('Save');
