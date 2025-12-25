@@ -8,6 +8,6 @@ DEVICE_ID=${1}
 echo "Running integration tests on iOS device: $DEVICE_ID"
 flutter drive \
   --driver=test/integration/infra/driver.dart \
-  --target=test/integration/todo_feature_integration_test.dart \
+  --target=test/integration/todo_feature_integration.dart \
   --device-id=$DEVICE_ID
 
