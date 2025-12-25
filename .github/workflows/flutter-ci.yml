@@ -121,8 +121,8 @@ jobs:
             cd apps/mobile/flutter
             flutter devices
             flutter drive \
-              --driver=test_driver/integration_test.dart \
-              --target=integration_test/todo_feature_integration_test.dart \
+              --driver=test/integration/infra/driver.dart \
+              --target=test/integration/todo_feature_integration.dart \
               --device-id=emulator-5554 || echo "Integration tests completed with status: $?"
 
       - name: Upload Android test results
@@ -188,8 +188,8 @@ jobs:
           DEVICE_ID=$(flutter devices | grep -i "iphone" | head -1 | awk '{print $5}' | tr -d '()' || echo "iPhone 15")
           echo "Using device: $DEVICE_ID"
           flutter drive \
-            --driver=test_driver/integration_test.dart \
-            --target=integration_test/todo_feature_integration_test.dart \
+            --driver=test/integration/infra/driver.dart \
+            --target=test/integration/todo_feature_integration.dart \
             --device-id="$DEVICE_ID" || echo "Integration tests completed with status: $?"
         working-directory: apps/mobile/flutter
 
