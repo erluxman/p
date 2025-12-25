@@ -1,190 +1,188 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:habit_todo_app/core/application/use_cases/create_todo_use_case.dart';
-import 'package:habit_todo_app/core/application/use_cases/get_all_todos_use_case.dart';
-import 'package:habit_todo_app/core/domain/entities/todo_icon_type.dart';
-import 'package:habit_todo_app/infrastructure/adapters/repositories/todo_repository_impl.dart';
-import 'package:habit_todo_app/infrastructure/data/local/todo_local_storage.dart';
+import 'package:habit_todo_app/main.dart' as app;
+import 'package:habit_todo_app/presentation/screens/tasks_screen.dart';
+import 'package:habit_todo_app/presentation/widgets/todo_card.dart';
+import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Integration test for the complete Todo feature.
+/// Integration test for the complete Todo feature on a real device.
 ///
-/// This test verifies the end-to-end flow:
-/// 1. Create 3 todos using the use cases
-/// 2. Verify they are persisted to storage
-/// 3. Verify they are rendered in the UI
+/// This test verifies the end-to-end flow on an iOS device:
+/// 1. App launches successfully
+/// 2. Create 3 todos via the UI
+/// 3. Verify they are rendered in the list
 ///
 /// **Success Criteria:**
-/// - 3 todos can be created successfully
-/// - All 3 todos appear in the list
-/// - Todos persist across repository instances
+/// - App launches without errors
+/// - 3 todos can be created successfully via UI
+/// - All 3 todos appear in the list on the Tasks screen
+
+/// Helper function to clear all todos from storage.
+Future<void> _clearAllTodos() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove('todos');
+}
+
+/// Helper function to get current todo count.
+Future<int> _getTodoCount() async {
+  final prefs = await SharedPreferences.getInstance();
+  final todosJson = prefs.getString('todos');
+  if (todosJson == null || todosJson.isEmpty) {
+    return 0;
+  }
+  // Simple count - count the number of "id" occurrences (rough estimate)
+  // For a more accurate count, we'd need to parse JSON, but this works for our purpose
+  return todosJson.split('"id"').length - 1;
+}
+
+/// Helper function to create a todo via the UI.
+Future<void> _createTodo(WidgetTester tester, String title) async {
+  // Wait for the UI to be ready
+  await tester.pumpAndSettle();
+
+  // Tap the "Add Todo" button
+  final addButton = find.text('Add Todo');
+  await tester.ensureVisible(addButton);
+  await tester.pumpAndSettle();
+
+  expect(addButton, findsOneWidget);
+  await tester.tap(addButton);
+  await tester.pumpAndSettle(const Duration(milliseconds: 500));
+
+  // Wait for dialog to appear
+  await tester.pumpAndSettle();
+
+  // Fill in the todo title
+  final titleField = find.byType(TextFormField).first;
+  await tester.ensureVisible(titleField);
+  await tester.pumpAndSettle();
+
+  await tester.enterText(titleField, title);
+  await tester.pumpAndSettle();
+
+  // Tap Save button
+  final saveButton = find.text('Save');
+  await tester.ensureVisible(saveButton);
+  await tester.pumpAndSettle();
+
+  expect(saveButton, findsOneWidget);
+  await tester.tap(saveButton);
+
+  // Wait for dialog to close and UI to update
+  await tester.pumpAndSettle(const Duration(seconds: 2));
+
+  // Additional wait to ensure state is updated
+  await tester.pump(const Duration(milliseconds: 500));
+  await tester.pumpAndSettle();
+}
+
 void main() {
-  group('Todo Feature Integration Test', () {
-    late SharedPreferences prefs;
-    late TodoLocalStorage storage;
-    late TodoRepositoryImpl repository;
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
+  group('Todo Feature Integration Test on Device', () {
     setUp(() async {
-      // Use in-memory SharedPreferences for testing
-      SharedPreferences.setMockInitialValues({});
-      prefs = await SharedPreferences.getInstance();
-      storage = TodoLocalStorage(prefs);
-      repository = TodoRepositoryImpl(storage);
+      // Clear all todos before each test to ensure clean state
+      await _clearAllTodos();
     });
 
-    tearDown(() async {
-      // Clear storage after each test
-      await prefs.clear();
+    testWidgets('should create 3 todos via UI and render them in the list',
+        (WidgetTester tester) async {
+      // Arrange - Clear todos and launch the app
+      await _clearAllTodos();
+      app.main();
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+
+      // Verify app launched and Tasks screen is displayed
+      expect(find.byType(TasksScreen), findsOneWidget);
+      expect(find.text('Tasks'), findsOneWidget);
+
+      // Verify we start with 0 todos
+      final initialCount = await _getTodoCount();
+      expect(initialCount, 0);
+
+      // Act - Create first todo
+      await _createTodo(tester, 'Write tomorrow\'s TODO');
+
+      // Verify first todo appears
+      await tester.pumpAndSettle();
+      expect(find.text('Write tomorrow\'s TODO'), findsOneWidget);
+
+      // Act - Create second todo
+      await _createTodo(tester, 'Read Atomic Habits');
+
+      // Verify second todo appears
+      await tester.pumpAndSettle();
+      expect(find.text('Read Atomic Habits'), findsOneWidget);
+
+      // Act - Create third todo
+      await _createTodo(tester, 'Exercise for 30 minutes');
+
+      // Wait for UI to fully update
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      // Assert - Verify all 3 todos are displayed in the UI
+      expect(find.text('Write tomorrow\'s TODO'), findsOneWidget);
+      expect(find.text('Read Atomic Habits'), findsOneWidget);
+      expect(find.text('Exercise for 30 minutes'), findsOneWidget);
+
+      // Verify exactly 3 todo cards are rendered
+      expect(find.byType(TodoCard), findsNWidgets(3));
     });
 
-    test('should create 3 todos and render them in the list', () async {
-      // Arrange - Create use cases
-      final createUseCase = CreateTodoUseCase(repository);
-      final getAllUseCase = GetAllTodosUseCase(repository);
+    testWidgets('should display empty state when no todos exist',
+        (WidgetTester tester) async {
+      // Arrange - Clear todos and launch the app
+      await _clearAllTodos();
+      app.main();
+      await tester.pumpAndSettle(const Duration(seconds: 2));
 
-      // Act - Create 3 todos
-      final todo1 = await createUseCase.execute(
-        title: 'Write tomorrow\'s TODO',
-        deadline: DateTime(2024, 1, 15, 20, 30),
-        iconType: TodoIconType.writing,
-      );
+      // Assert - Verify Tasks screen is displayed
+      expect(find.byType(TasksScreen), findsOneWidget);
+      expect(find.text('Tasks'), findsOneWidget);
 
-      final todo2 = await createUseCase.execute(
-        title: 'Read Atomic Habits',
-        deadline: DateTime(2024, 1, 15, 21, 15),
-        iconType: TodoIconType.reading,
-      );
+      // Verify no todos exist
+      final todoCount = await _getTodoCount();
+      expect(todoCount, 0);
 
-      final todo3 = await createUseCase.execute(
-        title: 'Exercise for 30 minutes',
-        deadline: DateTime(2024, 1, 16, 8, 0),
-        iconType: TodoIconType.exercise,
-      );
+      // The UI should show empty state or be ready for todos
+      await tester.pumpAndSettle();
 
-      // Assert - Verify todos were created
-      expect(todo1.id, isNotEmpty);
-      expect(todo1.title, 'Write tomorrow\'s TODO');
-      expect(todo2.id, isNotEmpty);
-      expect(todo2.title, 'Read Atomic Habits');
-      expect(todo3.id, isNotEmpty);
-      expect(todo3.title, 'Exercise for 30 minutes');
-
-      // Verify all todos are retrieved
-      final allTodos = await getAllUseCase.execute();
-      expect(allTodos.length, 3);
-      expect(allTodos.any((t) => t.id == todo1.id), isTrue);
-      expect(allTodos.any((t) => t.id == todo2.id), isTrue);
-      expect(allTodos.any((t) => t.id == todo3.id), isTrue);
-
-      // Verify todos persist across repository instances
-      final newRepository = TodoRepositoryImpl(storage);
-      final newGetAllUseCase = GetAllTodosUseCase(newRepository);
-      final persistedTodos = await newGetAllUseCase.execute();
-      expect(persistedTodos.length, 3);
+      // Check that either empty state is shown or no todo cards exist
+      final todoCards = find.byType(TodoCard);
+      expect(todoCards, findsNothing);
     });
 
-    test('should verify todos are retrievable after creation', () async {
-      // Arrange - Create 3 todos
-      final createUseCase = CreateTodoUseCase(repository);
-      final getAllUseCase = GetAllTodosUseCase(repository);
+    testWidgets('should create todo via UI and verify it appears',
+        (WidgetTester tester) async {
+      // Arrange - Clear todos and launch the app
+      await _clearAllTodos();
+      app.main();
+      await tester.pumpAndSettle(const Duration(seconds: 2));
 
-      // Act - Create 3 todos
-      final todo1 = await createUseCase.execute(
-        title: 'Write tomorrow\'s TODO',
-        deadline: DateTime(2024, 1, 15, 20, 30),
-        iconType: TodoIconType.writing,
-      );
+      // Verify Tasks screen is displayed
+      expect(find.byType(TasksScreen), findsOneWidget);
+      expect(find.text('Tasks'), findsOneWidget);
 
-      final todo2 = await createUseCase.execute(
-        title: 'Read Atomic Habits',
-        deadline: DateTime(2024, 1, 15, 21, 15),
-        iconType: TodoIconType.reading,
-      );
+      // Get initial count
+      final initialCount = await _getTodoCount();
 
-      final todo3 = await createUseCase.execute(
-        title: 'Exercise for 30 minutes',
-        deadline: DateTime(2024, 1, 16, 8, 0),
-        iconType: TodoIconType.exercise,
-      );
+      // Act - Create a todo via UI
+      await _createTodo(tester, 'Test Todo from UI');
 
-      // Assert - Verify all 3 todos are retrievable
-      final allTodos = await getAllUseCase.execute();
-      expect(allTodos.length, 3);
+      // Wait for UI to update
+      await tester.pumpAndSettle(const Duration(seconds: 1));
 
-      // Verify each todo has correct properties
-      final retrievedTodo1 = allTodos.firstWhere((t) => t.id == todo1.id);
-      expect(retrievedTodo1.title, 'Write tomorrow\'s TODO');
-      expect(retrievedTodo1.iconType, TodoIconType.writing);
+      // Assert - Verify the todo appears in the list
+      expect(find.text('Test Todo from UI'), findsOneWidget);
 
-      final retrievedTodo2 = allTodos.firstWhere((t) => t.id == todo2.id);
-      expect(retrievedTodo2.title, 'Read Atomic Habits');
-      expect(retrievedTodo2.iconType, TodoIconType.reading);
+      // Verify at least one todo card exists (could be more if there were existing ones)
+      final todoCards = find.byType(TodoCard);
+      expect(todoCards, findsAtLeastNWidgets(1));
 
-      final retrievedTodo3 = allTodos.firstWhere((t) => t.id == todo3.id);
-      expect(retrievedTodo3.title, 'Exercise for 30 minutes');
-      expect(retrievedTodo3.iconType, TodoIconType.exercise);
-    });
-
-    test('should verify todos have correct properties', () async {
-      // Arrange
-      final createUseCase = CreateTodoUseCase(repository);
-
-      // Act - Create 3 todos with different properties
-      final todo1 = await createUseCase.execute(
-        title: 'Todo with deadline',
-        deadline: DateTime(2024, 1, 15, 20, 30),
-        iconType: TodoIconType.writing,
-      );
-
-      final todo2 = await createUseCase.execute(
-        title: 'Todo without deadline',
-        iconType: TodoIconType.reading,
-      );
-
-      final todo3 = await createUseCase.execute(
-        title: 'Todo with description',
-        description: 'This is a detailed description',
-        iconType: TodoIconType.exercise,
-      );
-
-      // Assert - Verify properties
-      expect(todo1.deadline, isNotNull);
-      expect(todo1.iconType, TodoIconType.writing);
-      expect(todo1.isCompleted, false);
-
-      expect(todo2.deadline, isNull);
-      expect(todo2.iconType, TodoIconType.reading);
-      expect(todo2.isCompleted, false);
-
-      expect(todo3.description, 'This is a detailed description');
-      expect(todo3.iconType, TodoIconType.exercise);
-      expect(todo3.isCompleted, false);
-
-      // Verify all are retrievable
-      final getAllUseCase = GetAllTodosUseCase(repository);
-      final allTodos = await getAllUseCase.execute();
-      expect(allTodos.length, 3);
-    });
-
-    test('should maintain todo order after creation', () async {
-      // Arrange
-      final createUseCase = CreateTodoUseCase(repository);
-      final getAllUseCase = GetAllTodosUseCase(repository);
-
-      // Act - Create 3 todos in sequence
-      final todo1 = await createUseCase.execute(title: 'First Todo');
-      await Future.delayed(const Duration(milliseconds: 10));
-      final todo2 = await createUseCase.execute(title: 'Second Todo');
-      await Future.delayed(const Duration(milliseconds: 10));
-      final todo3 = await createUseCase.execute(title: 'Third Todo');
-
-      // Assert - Verify todos are in creation order
-      final allTodos = await getAllUseCase.execute();
-      expect(allTodos.length, 3);
-
-      // Todos should be retrievable (order may vary based on implementation)
-      expect(allTodos.any((t) => t.id == todo1.id), isTrue);
-      expect(allTodos.any((t) => t.id == todo2.id), isTrue);
-      expect(allTodos.any((t) => t.id == todo3.id), isTrue);
+      // Verify the count increased
+      final finalCount = await _getTodoCount();
+      expect(finalCount, greaterThan(initialCount));
     });
   });
 }
