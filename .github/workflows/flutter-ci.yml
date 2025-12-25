@@ -26,7 +26,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.0"
+          flutter-version: "3.35.3"
           channel: "stable"
           cache: true
 
@@ -95,7 +95,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.0"
+          flutter-version: "3.35.3"
           channel: "stable"
           cache: true
 
@@ -111,7 +111,6 @@ jobs:
 
       - name: Run Android integration tests
         uses: reactivecircus/android-emulator-runner@v2
-        working-directory: apps/mobile/flutter
         with:
           api-level: ${{ matrix.api-level }}
           arch: x86_64
@@ -121,20 +120,10 @@ jobs:
           script: |
             cd apps/mobile/flutter
             flutter devices
-            DEVICE_ID=$(flutter devices | grep emulator | awk '{print $NF}' | tr -d '•')
             flutter drive \
-              --driver=test/integration/infra/driver.dart \
-              --target=test/integration/todo_feature_integration.dart \
-              --device-id=$DEVICE_ID || echo "Integration tests completed with status: $?"
-        # run: |
-        #   flutter devices
-        #   DEVICE_ID=$(flutter devices | grep -i "iphone" | head -1 | awk '{print $5}' | tr -d '()' || echo "iPhone 15")
-        #   echo "Using device: $DEVICE_ID"
-        #   flutter drive \
-        #     --driver=test/integration/infra/driver.dart \
-        #     --target=test/integration/todo_feature_integration.dart \
-        #     --device-id="$DEVICE_ID" || echo "Integration tests completed with status: $?"
-        # working-directory: apps/mobile/flutter
+              --driver=test_driver/integration_test.dart \
+              --target=integration_test/todo_feature_integration_test.dart \
+              --device-id=emulator-5554 || echo "Integration tests completed with status: $?"
 
       - name: Upload Android test results
         if: ${{ !cancelled() }}
@@ -156,7 +145,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.0"
+          flutter-version: "3.35.3"
           channel: "stable"
           cache: true
 
@@ -199,8 +188,8 @@ jobs:
           DEVICE_ID=$(flutter devices | grep -i "iphone" | head -1 | awk '{print $5}' | tr -d '()' || echo "iPhone 15")
           echo "Using device: $DEVICE_ID"
           flutter drive \
-            --driver=test/integration/infra/driver.dart \
-            --target=test/integration/todo_feature_integration.dart \
+            --driver=test_driver/integration_test.dart \
+            --target=integration_test/todo_feature_integration_test.dart \
             --device-id="$DEVICE_ID" || echo "Integration tests completed with status: $?"
         working-directory: apps/mobile/flutter
 
