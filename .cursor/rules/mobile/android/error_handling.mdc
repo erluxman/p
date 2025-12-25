@@ -1,0 +1,118 @@
+---
+description: Native Android error handling rules (sealed classes, Result types, exception handling).
+globs:
+  - "apps/mobile/android/**"
+---
+
+# Native Android: Error Handling
+
+- Use sealed classes or Result types for success/error states.
+- Handle exceptions in coroutines with try-catch or Result types.
+- Never throw exceptions from use cases; return Result types instead.
+- Map errors to user-friendly messages in the presentation layer.
+- Log errors appropriately; never log sensitive data.
+
+## Result Pattern
+
+```kotlin
+// core/application/types/Result.kt
+sealed class Result<out T> {
+    data class Success<T>(val data: T) : Result<T>()
+    data class Error(val exception: Throwable) : Result<Nothing>()
+    
+    inline fun <R> fold(
+        onSuccess: (T) -> R,
+        onError: (Throwable) -> R
+    ): R = when (this) {
+        is Success -> onSuccess(data)
+        is Error -> onError(exception)
+    }
+}
+
+// Usage in use cases
+class CreateTodoUseCase(private val repository: TodoRepository) {
+    suspend fun execute(params: CreateTodoParams): Result<Todo> {
+        // Validation
+        if (params.title.isBlank()) {
+            return Result.Error(IllegalArgumentException("Title cannot be empty"))
+        }
+        
+        return try {
+            val todo = repository.create(params)
+            Result.Success(todo)
+        } catch (e: NetworkException) {
+            Result.Error(e)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+}
+```
+
+## Presentation Layer Handling
+
+```kotlin
+// In ViewModel
+class TodoViewModel(private val createTodoUseCase: CreateTodoUseCase) : ViewModel() {
+    private val _uiState = MutableStateFlow<TodoUiState>(TodoUiState.Idle)
+    val uiState: StateFlow<TodoUiState> = _uiState.asStateFlow()
+    
+    fun createTodo(title: String) {
+        viewModelScope.launch {
+            _uiState.value = TodoUiState.Loading
+            when (val result = createTodoUseCase.execute(CreateTodoParams(title))) {
+                is Result.Success -> {
+                    _uiState.value = TodoUiState.Success(result.data)
+                }
+                is Result.Error -> {
+                    _uiState.value = TodoUiState.Error(
+                        result.exception.message ?: "Failed to create todo"
+                    )
+                }
+            }
+        }
+    }
+}
+```
+
+## Exception Handling in Coroutines
+
+```kotlin
+// ✅ GOOD: Proper exception handling
+viewModelScope.launch {
+    try {
+        val result = repository.fetchTodos()
+        // Handle success
+    } catch (e: NetworkException) {
+        // Handle network error
+        _error.value = "Network error: ${e.message}"
+    } catch (e: ServerException) {
+        // Handle server error
+        _error.value = "Server error: ${e.message}"
+    } catch (e: Exception) {
+        // Handle unexpected error
+        logError(e)
+        _error.value = "An unexpected error occurred"
+    }
+}
+
+// ✅ BETTER: Using Result type
+viewModelScope.launch {
+    when (val result = repository.fetchTodos()) {
+        is Result.Success -> { /* handle success */ }
+        is Result.Error -> { /* handle error */ }
+    }
+}
+```
+
+## Custom Exceptions
+
+```kotlin
+// core/domain/exceptions/NetworkException.kt
+class NetworkException(message: String, cause: Throwable? = null) : 
+    Exception(message, cause)
+
+class ServerException(message: String, val code: Int) : Exception(message)
+
+class ValidationException(message: String) : Exception(message)
+```

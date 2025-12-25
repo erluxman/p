@@ -1,0 +1,343 @@
+---
+description: Native iOS testing expectations.
+globs:
+  - "apps/mobile/ios/**"
+---
+
+# Native iOS: Testing
+
+- Non-trivial logic must have tests.
+- Bug fixes require a repro test that fails before the fix.
+- Prefer tests that assert behavior, not implementation details.
+- Domain layer: 100% coverage target.
+- Application layer: 80% coverage target.
+- Infrastructure layer: 70% coverage target.
+- Presentation layer: 60% coverage target.
+
+## Test Structure
+
+```text
+productive/
+├── productiveTests/          # Unit tests
+│   ├── Domain/
+│   ├── Application/
+│   └── Infrastructure/
+└── productiveUITests/         # UI and integration tests
+    ├── Presentation/
+    └── Integration/
+```
+
+## Unit Tests (Swift Testing)
+
+Swift Testing is the modern testing framework (iOS 18+). Use it for new tests.
+
+```swift
+// productiveTests/Domain/UseCases/CreateTodoUseCaseTests.swift
+import Testing
+@testable import productive
+
+struct CreateTodoUseCaseTests {
+    @Test("should create todo with valid input")
+    func createTodoWithValidInput() async throws {
+        // Arrange
+        let mockRepository = MockTodoRepository()
+        let useCase = CreateTodoUseCase(repository: mockRepository)
+        let expectedTodo = TodoEntity(id: "1", title: "Test Todo", isCompleted: false)
+        mockRepository.createResult = .success(expectedTodo)
+
+        // Act
+        let result = await useCase.execute(title: "Test Todo")
+
+        // Assert
+        #expect(result.isSuccess)
+        let todo = try result.get()
+        #expect(todo.title == "Test Todo")
+        #expect(mockRepository.createCallCount == 1)
+    }
+
+    @Test("should fail when title is empty")
+    func failWhenTitleIsEmpty() async throws {
+        // Arrange
+        let useCase = CreateTodoUseCase(repository: MockTodoRepository())
+
+        // Act
+        let result = await useCase.execute(title: "")
+
+        // Assert
+        #expect(result.isFailure)
+        if case .failure(let error) = result {
+            #expect(error.localizedDescription.contains("required"))
+        }
+    }
+}
+```
+
+## Unit Tests (XCTest)
+
+XCTest is the traditional testing framework. Use it for compatibility or when Swift Testing isn't available.
+
+```swift
+// productiveTests/Domain/UseCases/CreateTodoUseCaseTests.swift
+import XCTest
+@testable import productive
+
+final class CreateTodoUseCaseTests: XCTestCase {
+    var repository: MockTodoRepository!
+    var useCase: CreateTodoUseCase!
+
+    override func setUp() {
+        super.setUp()
+        repository = MockTodoRepository()
+        useCase = CreateTodoUseCase(repository: repository)
+    }
+
+    override func tearDown() {
+        repository = nil
+        useCase = nil
+        super.tearDown()
+    }
+
+    func testCreateTodoWithValidInput() async throws {
+        // Arrange
+        let expectedTodo = TodoEntity(id: "1", title: "Test Todo", isCompleted: false)
+        repository.createResult = .success(expectedTodo)
+
+        // Act
+        let result = await useCase.execute(title: "Test Todo")
+
+        // Assert
+        XCTAssertTrue(result.isSuccess)
+        let todo = try result.get()
+        XCTAssertEqual(todo.title, "Test Todo")
+        XCTAssertEqual(repository.createCallCount, 1)
+    }
+
+    func testFailWhenTitleIsEmpty() async throws {
+        // Act
+        let result = await useCase.execute(title: "")
+
+        // Assert
+        XCTAssertTrue(result.isFailure)
+        if case .failure(let error) = result {
+            XCTAssertTrue(error.localizedDescription.contains("required"))
+        }
+    }
+}
+```
+
+## UI Tests (XCTest UI Testing)
+
+UI tests verify user interactions and visual elements.
+
+```swift
+// productiveUITests/Presentation/TodoListScreenUITests.swift
+import XCTest
+
+final class TodoListScreenUITests: XCTestCase {
+    var app: XCUIApplication!
+
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        app = XCUIApplication()
+        app.launch()
+    }
+
+    override func tearDownWithError() throws {
+        app = nil
+    }
+
+    @MainActor
+    func testDisplaysTodoTitle() throws {
+        // Arrange
+        let todoTitle = "Test Todo"
+
+        // Act: Navigate to todo list
+        let todoList = app.tables["todo_list"]
+        XCTAssertTrue(todoList.waitForExistence(timeout: 2.0))
+
+        // Assert
+        let todoCell = todoList.cells.containing(.staticText, identifier: todoTitle).firstMatch
+        XCTAssertTrue(todoCell.exists)
+    }
+
+    @MainActor
+    func testCreatesTodoWhenSubmitButtonIsTapped() throws {
+        // Act: Navigate to create screen
+        app.buttons["create_todo_button"].tap()
+
+        // Enter todo title
+        let titleField = app.textFields["todo_title_input"]
+        XCTAssertTrue(titleField.waitForExistence(timeout: 2.0))
+        titleField.tap()
+        titleField.typeText("New Todo")
+
+        // Submit
+        app.buttons["submit_button"].tap()
+
+        // Assert: Verify todo appears in list
+        let todoList = app.tables["todo_list"]
+        XCTAssertTrue(todoList.waitForExistence(timeout: 2.0))
+        let newTodo = todoList.cells.containing(.staticText, identifier: "New Todo").firstMatch
+        XCTAssertTrue(newTodo.exists)
+    }
+
+    @MainActor
+    func testTogglesTodoCompletion() throws {
+        // Arrange: Find existing todo
+        let todoList = app.tables["todo_list"]
+        XCTAssertTrue(todoList.waitForExistence(timeout: 2.0))
+        let todoCell = todoList.cells.firstMatch
+        XCTAssertTrue(todoCell.exists)
+
+        // Act: Tap toggle button
+        let toggleButton = todoCell.buttons["toggle_button"]
+        toggleButton.tap()
+
+        // Assert: Verify completion state changed
+        let completedIndicator = todoCell.images["completed_indicator"]
+        XCTAssertTrue(completedIndicator.exists)
+    }
+}
+```
+
+## Integration Tests
+
+Integration tests verify interactions between multiple components.
+
+```swift
+// productiveUITests/Integration/TodoFlowIntegrationTests.swift
+import XCTest
+@testable import productive
+
+final class TodoFlowIntegrationTests: XCTestCase {
+    var repository: TodoRepository!
+    var useCase: CreateTodoUseCase!
+
+    override func setUp() {
+        super.setUp()
+        repository = TodoRepositoryImpl()
+        useCase = CreateTodoUseCase(repository: repository)
+    }
+
+    override func tearDown() {
+        Task {
+            await repository.deleteAll()
+        }
+        repository = nil
+        useCase = nil
+        super.tearDown()
+    }
+
+    func testCreateAndRetrieveTodo() async throws {
+        // Arrange
+        let todoTitle = "Integration Test Todo"
+
+        // Act: Create todo
+        let createResult = await useCase.execute(title: todoTitle)
+        XCTAssertTrue(createResult.isSuccess)
+
+        let createdTodo = try createResult.get()
+
+        // Act: Retrieve todo
+        let retrieveResult = await repository.getById(createdTodo.id)
+
+        // Assert
+        XCTAssertTrue(retrieveResult.isSuccess)
+        let retrievedTodo = try retrieveResult.get()
+        XCTAssertEqual(retrievedTodo.title, todoTitle)
+    }
+
+    func testDeleteTodo() async throws {
+        // Arrange: Create a todo
+        let createResult = await useCase.execute(title: "To Delete")
+        let todo = try createResult.get()
+
+        // Act: Delete todo
+        let deleteResult = await repository.delete(id: todo.id)
+
+        // Assert
+        XCTAssertTrue(deleteResult.isSuccess)
+
+        // Verify todo is gone
+        let retrieveResult = await repository.getById(todo.id)
+        XCTAssertTrue(retrieveResult.isFailure)
+    }
+}
+```
+
+## Snapshot Testing
+
+For visual regression testing, use snapshot testing libraries like `swift-snapshot-testing`.
+
+```swift
+// productiveTests/Presentation/Views/TodoItemSnapshotTests.swift
+import SnapshotTesting
+import SwiftUI
+import XCTest
+@testable import productive
+
+final class TodoItemSnapshotTests: XCTestCase {
+    func testTodoItemDefaultState() {
+        // Arrange
+        let todo = TodoEntity(id: "1", title: "Test Todo", isCompleted: false)
+        let view = TodoItemView(todo: todo)
+
+        // Act & Assert
+        assertSnapshot(matching: view, as: .image)
+    }
+
+    func testTodoItemCompletedState() {
+        // Arrange
+        let todo = TodoEntity(id: "1", title: "Test Todo", isCompleted: true)
+        let view = TodoItemView(todo: todo)
+
+        // Act & Assert
+        assertSnapshot(matching: view, as: .image)
+    }
+}
+```
+
+## Test Best Practices
+
+- Use **Swift Testing** (iOS 18+) for new tests when possible.
+- Use **XCTest** for compatibility or when Swift Testing isn't available.
+- Use `@testable import` to access internal types in tests.
+- Use `async/await` for asynchronous operations in tests.
+- Use `XCTestExpectation` for testing callbacks or delegates.
+- Mock external dependencies (API, database, storage).
+- Test error states and edge cases.
+- Keep tests fast and independent.
+- Use descriptive test names: `testCreateTodoWithValidInput()`.
+- Use `setUp()` and `tearDown()` for test setup and cleanup.
+- Use `@MainActor` for UI-related tests.
+- Prefer `Result<T>` types in tests to match production code patterns.
+- Use `XCTAssert` family of assertions for XCTest.
+- Use `#expect()` for Swift Testing assertions.
+- Use accessibility identifiers for UI element selection in UI tests.
+
+## Running Tests
+
+```bash
+# Run all tests
+xcodebuild test -scheme productive -destination 'platform=iOS Simulator,name=iPhone 15'
+
+# Run specific test class
+xcodebuild test -scheme productive -destination 'platform=iOS Simulator,name=iPhone 15' -only-testing:productiveTests/CreateTodoUseCaseTests
+
+# Run UI tests only
+xcodebuild test -scheme productive -destination 'platform=iOS Simulator,name=iPhone 15' -only-testing:productiveUITests
+
+# Run tests with coverage
+xcodebuild test -scheme productive -destination 'platform=iOS Simulator,name=iPhone 15' -enableCodeCoverage YES
+```
+
+## Test Targets Configuration
+
+Ensure test targets are properly configured in Xcode:
+
+- **Unit Test Target**: `productiveTests`
+  - Framework: Swift Testing or XCTest
+  - Test Host: `productive.app`
+- **UI Test Target**: `productiveUITests`
+  - Framework: XCTest
+  - Test Target: `productive.app`

@@ -211,7 +211,7 @@ Write code according to the approved plan.
 #### Code Quality
 
 - ✅ Follows `project_constitution.md`
-- ✅ Follows `.cursorrules`
+- ✅ Follows `.cursor/rules/**/*.mdc` (core + platform-specific rules)
 - ✅ Minimal comments (only for non-obvious/tricky code)
 - ✅ Handles errors
 - ✅ No hardcoded values
@@ -309,7 +309,7 @@ void main() {
 ### Verification Checklist
 
 - [ ] All tests pass
-- [ ] Code coverage meets requirements (see `.cursorrules`)
+- [ ] Code coverage meets requirements (see platform-specific testing rules in `.cursor/rules/[platform]/testing.mdc`)
 - [ ] No linter errors
 - [ ] Code follows architecture
 - [ ] Documentation is complete

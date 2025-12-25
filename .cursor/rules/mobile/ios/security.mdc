@@ -1,0 +1,321 @@
+---
+description: Native iOS security rules.
+globs:
+  - "apps/mobile/ios/**"
+---
+
+# Native iOS: Security
+
+- Never hardcode secrets, API keys, or tokens in source code.
+- Use Keychain Services for secure key storage.
+- Use App Transport Security (ATS) for network security.
+- Implement certificate pinning for production builds.
+- Never log sensitive data (tokens, passwords, PII).
+- Validate and sanitize all external input.
+- Auth/authz changes require explicit approval.
+
+## Secure Storage
+
+```swift
+// ✅ GOOD: Use Keychain Services for sensitive data
+import Security
+
+class KeychainManager {
+    private let service = "com.erluxman.productive"
+
+    func saveToken(_ token: String, forKey key: String) throws {
+        guard let data = token.data(using: .utf8) else {
+            throw KeychainError.dataConversionFailed
+        }
+
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key,
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+        ]
+
+        // Delete existing item first
+        SecItemDelete(query as CFDictionary)
+
+        // Add new item
+        let status = SecItemAdd(query as CFDictionary, nil)
+        guard status == errSecSuccess else {
+            throw KeychainError.saveFailed(status)
+        }
+    }
+
+    func getToken(forKey key: String) throws -> String? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+
+        guard status == errSecSuccess,
+              let data = result as? Data,
+              let token = String(data: data, encoding: .utf8) else {
+            if status == errSecItemNotFound {
+                return nil
+            }
+            throw KeychainError.retrieveFailed(status)
+        }
+
+        return token
+    }
+
+    func deleteToken(forKey key: String) throws {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key
+        ]
+
+        let status = SecItemDelete(query as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            throw KeychainError.deleteFailed(status)
+        }
+    }
+}
+
+enum KeychainError: Error {
+    case dataConversionFailed
+    case saveFailed(OSStatus)
+    case retrieveFailed(OSStatus)
+    case deleteFailed(OSStatus)
+}
+
+// ❌ BAD: Storing tokens in UserDefaults (not secure)
+UserDefaults.standard.set(token, forKey: "auth_token") // Not encrypted!
+```
+
+## Configuration Management
+
+```swift
+// ✅ GOOD: Use Info.plist and build configurations for configuration
+// Info.plist
+<key>API_BASE_URL</key>
+<string>$(API_BASE_URL)</string>
+<key>API_KEY</key>
+<string>$(API_KEY)</string>
+
+// Build settings (Xcode)
+// API_BASE_URL = https://api.example.com (Release)
+// API_BASE_URL = https://api-dev.example.com (Debug)
+// API_KEY = $(API_KEY_FROM_ENV)
+
+// Usage
+struct AppConfig {
+    static var apiBaseURL: String {
+        guard let url = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String else {
+            fatalError("API_BASE_URL not found in Info.plist")
+        }
+        return url
+    }
+
+    static var apiKey: String {
+        guard let key = Bundle.main.object(forInfoDictionaryKey: "API_KEY") as? String else {
+            fatalError("API_KEY not found in Info.plist")
+        }
+        return key
+    }
+}
+
+// ❌ BAD: Hardcoded secrets
+let API_KEY = "sk_live_1234567890" // Never do this!
+```
+
+## Certificate Pinning
+
+```swift
+// ✅ GOOD: Certificate pinning for production
+import Foundation
+
+class CertificatePinningDelegate: NSObject, URLSessionDelegate {
+    func urlSession(
+        _ session: URLSession,
+        didReceive challenge: URLAuthenticationChallenge,
+        completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+    ) {
+        guard let serverTrust = challenge.protectionSpace.serverTrust else {
+            completionHandler(.cancelAuthenticationChallenge, nil)
+            return
+        }
+
+        // Get server certificates
+        let policies = [SecPolicyCreateSSL(true, challenge.protectionSpace.host as CFString)]
+        SecTrustSetPolicies(serverTrust, policies as CFTypeRef)
+
+        var secresult = SecTrustResultType.invalid
+        let status = SecTrustEvaluate(serverTrust, &secresult)
+
+        guard status == errSecSuccess else {
+            completionHandler(.cancelAuthenticationChallenge, nil)
+            return
+        }
+
+        // Get certificate chain
+        let certificateCount = SecTrustGetCertificateCount(serverTrust)
+        guard certificateCount > 0 else {
+            completionHandler(.cancelAuthenticationChallenge, nil)
+            return
+        }
+
+        // Validate pinned certificate
+        if let serverCertificate = SecTrustGetCertificateAtIndex(serverTrust, 0) {
+            let serverCertificateData = SecCertificateCopyData(serverCertificate) as Data
+            let pinnedCertificates = getPinnedCertificates()
+
+            for pinnedCertificate in pinnedCertificates {
+                if serverCertificateData == pinnedCertificate {
+                    completionHandler(.useCredential, URLCredential(trust: serverTrust))
+                    return
+                }
+            }
+        }
+
+        completionHandler(.cancelAuthenticationChallenge, nil)
+    }
+
+    private func getPinnedCertificates() -> [Data] {
+        // Load pinned certificates from bundle
+        guard let certificatePath = Bundle.main.path(forResource: "certificate", ofType: "cer"),
+              let certificateData = NSData(contentsOfFile: certificatePath) as Data? else {
+            return []
+        }
+        return [certificateData]
+    }
+}
+```
+
+## App Transport Security
+
+```swift
+// ✅ GOOD: Configure App Transport Security
+// Info.plist
+<key>NSAppTransportSecurity</key>
+<dict>
+    <key>NSAllowsArbitraryLoads</key>
+    <false/>
+    <key>NSExceptionDomains</key>
+    <dict>
+        <key>api.example.com</key>
+        <dict>
+            <key>NSIncludesSubdomains</key>
+            <true/>
+            <key>NSExceptionRequiresForwardSecrecy</key>
+            <false/>
+            <key>NSExceptionAllowsInsecureHTTPLoads</key>
+            <false/>
+            <key>NSPinnedCAIdentities</key>
+            <array>
+                <dict>
+                    <key>SPKI-SHA256-BASE64</key>
+                    <string>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</string>
+                </dict>
+            </array>
+        </dict>
+    </dict>
+</dict>
+```
+
+## Input Validation
+
+```swift
+// ✅ GOOD: Validate and sanitize input
+import Foundation
+
+struct InputValidator {
+    static func validateEmail(_ email: String) -> Bool {
+        let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+        let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
+        return emailPredicate.evaluate(with: email)
+    }
+
+    static func sanitizeInput(_ input: String) -> String {
+        // Remove potentially dangerous characters
+        return input
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "'", with: "&#x27;")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+// In use case
+class CreateTodoUseCase {
+    func execute(title: String) async -> Result<TodoEntity, Error> {
+        let sanitizedTitle = InputValidator.sanitizeInput(title)
+        guard !sanitizedTitle.isEmpty else {
+            return .failure(ValidationError("Title cannot be empty"))
+        }
+        // ...
+    }
+}
+```
+
+## Safe Logging
+
+```swift
+// ✅ GOOD: Redact sensitive data from logs
+import os.log
+
+struct SafeLogger {
+    private static let logger = Logger(subsystem: "com.erluxman.productive", category: "app")
+
+    static func logError(_ error: Error, context: [String: Any] = [:]) {
+        var safeContext = context
+
+        // Redact sensitive fields
+        for key in safeContext.keys {
+            let lowercasedKey = key.lowercased()
+            if lowercasedKey.contains("token") ||
+               lowercasedKey.contains("password") ||
+               lowercasedKey.contains("secret") ||
+               lowercasedKey.contains("key") {
+                safeContext[key] = "[REDACTED]"
+            }
+        }
+
+        logger.error("Error: \(error.localizedDescription, privacy: .public)")
+        logger.debug("Context: \(String(describing: safeContext), privacy: .public)")
+    }
+}
+
+// ❌ BAD: Logging sensitive data
+print("User token: \(token)") // Never log tokens!
+```
+
+## Code Obfuscation
+
+```swift
+// ✅ GOOD: Enable code obfuscation for production
+// Build Settings in Xcode:
+// - Swift Compiler - Code Generation: Optimization Level = Optimize for Speed [-O]
+// - Swift Compiler - Code Generation: Strip Debug Symbols During Copy = Yes
+// - Deployment: Strip Linked Product = Yes
+// - Deployment: Strip Swift Symbols = Yes
+```
+
+## Security Best Practices
+
+- Use Keychain Services for sensitive data storage.
+- Never store secrets in source code or version control.
+- Use Info.plist and build configurations for environment-specific settings.
+- Implement certificate pinning for production.
+- Configure App Transport Security (ATS) properly.
+- Validate and sanitize all user input.
+- Redact sensitive data from logs.
+- Use `os.log` for structured logging.
+- Enable code obfuscation and symbol stripping for release builds.
+- Keep dependencies up to date for security patches.
+- Review and update security configurations regularly.
+- Use biometric authentication (Face ID/Touch ID) when appropriate.
+- Implement proper session management and token refresh.

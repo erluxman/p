@@ -28,4 +28,3 @@ services/spring_boot/
   - `.cursor/rules/core/*`
 - Scoped Spring Boot rules:
   - `.cursor/rules/backend/spring_boot/*`
-

@@ -2,9 +2,9 @@
 description: Flutter animations rules. Only applies when working in animation code.
 globs:
   - "flutter_app/lib/**/animation/**"
-  - "apps/flutter/lib/**/animation/**"
+  - "apps/mobile/flutter/lib/**/animation/**"
   - "flutter_app/lib/**/animations/**"
-  - "apps/flutter/lib/**/animations/**"
+  - "apps/mobile/flutter/lib/**/animations/**"
 ---
 
 # Flutter: Animations

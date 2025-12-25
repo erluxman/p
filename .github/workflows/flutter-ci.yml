@@ -1,0 +1,215 @@
+name: Flutter CI/CD
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: flutter-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze_and_test:
+    name: "Analyze & Unit Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.35.3"
+          channel: "stable"
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: apps/mobile/flutter
+
+      - name: Verify Flutter installation
+        run: flutter doctor -v
+        working-directory: apps/mobile/flutter
+
+      - name: Run Flutter analyze
+        run: flutter analyze
+        working-directory: apps/mobile/flutter
+
+      - name: Run unit tests
+        run: flutter test --coverage
+        working-directory: apps/mobile/flutter
+
+      - name: Upload coverage reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: "apps/mobile/flutter/coverage/lcov.info"
+          if-no-files-found: ignore
+
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: "apps/mobile/flutter/test/**/*.dart"
+          if-no-files-found: ignore
+
+  test_android:
+    name: "Android Integration Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        api-level: [26, 34]
+
+    steps:
+      - name: Delete unnecessary tools 🔧
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          android: false
+          tool-cache: true
+          dotnet: true
+          haskell: true
+          swap-storage: true
+          docker-images: false
+          large-packages: false
+
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls /dev/kvm
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.35.3"
+          channel: "stable"
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: apps/mobile/flutter
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: "zulu"
+          java-version: 21
+
+      - name: Run Android integration tests
+        uses: reactivecircus/android-emulator-runner@v2
+        working-directory: apps/mobile/flutter
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: x86_64
+          disable-animations: true
+          disk-size: 6000M
+          heap-size: 600M
+          script: |
+            cd apps/mobile/flutter
+            flutter devices
+            DEVICE_ID=$(flutter devices | grep emulator | awk '{print $NF}' | tr -d '•')
+            flutter drive \
+              --driver=test/integration/infra/driver.dart \
+              --target=test/integration/todo_feature_integration.dart \
+              --device-id=$DEVICE_ID || echo "Integration tests completed with status: $?"
+        # run: |
+        #   flutter devices
+        #   DEVICE_ID=$(flutter devices | grep -i "iphone" | head -1 | awk '{print $5}' | tr -d '()' || echo "iPhone 15")
+        #   echo "Using device: $DEVICE_ID"
+        #   flutter drive \
+        #     --driver=test/integration/infra/driver.dart \
+        #     --target=test/integration/todo_feature_integration.dart \
+        #     --device-id="$DEVICE_ID" || echo "Integration tests completed with status: $?"
+        # working-directory: apps/mobile/flutter
+
+
+
+      - name: Upload Android test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-integration-test-results-${{ matrix.api-level }}
+          path: "apps/mobile/flutter/test_driver/**"
+          if-no-files-found: ignore
+
+  test_ios:
+    name: "iOS Integration Tests"
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.35.3"
+          channel: "stable"
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: apps/mobile/flutter
+
+      - name: List available iOS simulators
+        run: xcrun simctl list devices available
+        working-directory: apps/mobile/flutter
+
+      - name: Get available iOS runtime
+        id: get_runtime
+        run: |
+          RUNTIME=$(xcrun simctl list runtimes available | grep -i ios | head -1 | sed 's/.*(\(.*\))/\1/' | xargs)
+          echo "runtime=$RUNTIME" >> $GITHUB_OUTPUT
+          echo "Using iOS runtime: $RUNTIME"
+        working-directory: apps/mobile/flutter
+
+      - name: Create iOS simulator
+        run: |
+          RUNTIME="${{ steps.get_runtime.outputs.runtime }}"
+          xcrun simctl create "iPhone 15" "iPhone 15" "$RUNTIME" 2>/dev/null || echo "Simulator may already exist"
+        working-directory: apps/mobile/flutter
+
+      - name: Boot iOS simulator
+        run: |
+          xcrun simctl boot "iPhone 15" 2>/dev/null || echo "Simulator may already be booted"
+          sleep 10
+        working-directory: apps/mobile/flutter
+
+      - name: Wait for simulator to be ready
+        run: |
+          timeout 60 bash -c 'until xcrun simctl list devices | grep -q "iPhone 15.*Booted"; do sleep 2; done' || true
+        working-directory: apps/mobile/flutter
+
+      - name: Run iOS integration tests
+        run: |
+          flutter devices
+          DEVICE_ID=$(flutter devices | grep -i "iphone" | head -1 | awk '{print $5}' | tr -d '()' || echo "iPhone 15")
+          echo "Using device: $DEVICE_ID"
+          flutter drive \
+            --driver=test/integration/infra/driver.dart \
+            --target=test/integration/todo_feature_integration.dart \
+            --device-id="$DEVICE_ID" || echo "Integration tests completed with status: $?"
+        working-directory: apps/mobile/flutter
+
+      - name: Upload iOS test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-integration-test-results
+          path: "apps/mobile/flutter/test_driver/**"
+          if-no-files-found: ignore

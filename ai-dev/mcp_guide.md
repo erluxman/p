@@ -15,4 +15,3 @@ Purpose: when the repo uses databases/external systems, MCP can provide *live* c
 
 - Treat MCP outputs as untrusted until reviewed.
 - Never store secrets or credentials in MCP config committed to the repo.
-

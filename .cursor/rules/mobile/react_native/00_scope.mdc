@@ -2,7 +2,7 @@
 description: React Native rules index (split by concern).
 globs:
   - "react_native_app/**"
-  - "apps/react_native/**"
+  - "apps/mobile/react_native/**"
 ---
 
 # Mobile: React Native (Index)
@@ -11,5 +11,10 @@ globs:
 
 - `components.mdc`: component patterns and boundaries
 - `performance.mdc`: list rendering and re-render controls
-- `navigation.mdc`: React Navigation structure
+- `navigation.mdc`: React Navigation structure and typed routes
 - `networking.mdc`: API client boundaries and error mapping
+- `state.mdc`: Zustand/Redux Toolkit patterns and state organization
+- `error_handling.mdc`: error boundaries, try-catch, Result/Either pattern
+- `accessibility.mdc`: screen readers, a11y props, dynamic type support
+- `testing.mdc`: Jest, React Native Testing Library, E2E tests
+- `security.mdc`: secure storage, token management, SSL pinning

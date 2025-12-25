@@ -1,0 +1,99 @@
+---
+description: Native Android performance rules (memory management, coroutines, background work).
+globs:
+  - "apps/mobile/android/**"
+---
+
+# Native Android: Performance
+
+- Use coroutines for async work; avoid blocking the main thread.
+- Use `RecyclerView` for lists (never `ListView` for dynamic content).
+- Implement proper memory management; avoid memory leaks.
+- Use `WorkManager` for background tasks that need to survive process death.
+- Optimize image loading with Glide or Coil (never load full-size images into memory).
+- Profile with Android Profiler to identify bottlenecks.
+
+## Coroutines
+
+```kotlin
+// ✅ GOOD: Coroutine for async work
+class TodoRepository {
+    suspend fun fetchTodos(): Result<List<Todo>> = withContext(Dispatchers.IO) {
+        try {
+            val todos = api.getTodos()
+            Result.success(todos)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+}
+
+// ❌ BAD: Blocking main thread
+fun fetchTodos(): List<Todo> {
+    return api.getTodos() // Blocks!
+}
+```
+
+## RecyclerView
+
+```kotlin
+// ✅ GOOD: RecyclerView with ViewHolder pattern
+class TodoAdapter : RecyclerView.Adapter<TodoViewHolder>() {
+    override fun onBindViewHolder(holder: TodoViewHolder, position: Int) {
+        holder.bind(todos[position])
+    }
+}
+
+// ❌ BAD: ListView for dynamic content (deprecated, inefficient)
+class TodoListAdapter : BaseAdapter() { /* ... */ }
+```
+
+## Memory Management
+
+```kotlin
+// ✅ GOOD: Proper lifecycle awareness
+class TodoViewModel : ViewModel() {
+    private val _todos = MutableLiveData<List<Todo>>()
+    val todos: LiveData<List<Todo>> = _todos
+    
+    init {
+        viewModelScope.launch {
+            // Automatically cancelled when ViewModel is cleared
+            _todos.value = repository.fetchTodos()
+        }
+    }
+}
+
+// ❌ BAD: Memory leak (holding reference to Activity/Context)
+class TodoRepository(private val context: Context) { /* ... */ }
+```
+
+## Background Work
+
+```kotlin
+// ✅ GOOD: WorkManager for background tasks
+class SyncTodosWorker(context: Context, params: WorkerParameters) : 
+    CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result {
+        return try {
+            repository.syncTodos()
+            Result.success()
+        } catch (e: Exception) {
+            Result.retry()
+        }
+    }
+}
+```
+
+## Image Loading
+
+```kotlin
+// ✅ GOOD: Glide with proper sizing
+Glide.with(context)
+    .load(imageUrl)
+    .override(200, 200) // Resize before loading
+    .into(imageView)
+
+// ❌ BAD: Loading full-size image
+imageView.setImageBitmap(BitmapFactory.decodeFile(imagePath))
+```

@@ -2,9 +2,9 @@
 description: Flutter navigation rules (go_router and routing boundaries).
 globs:
   - "flutter_app/lib/presentation/navigation/**"
-  - "apps/flutter/lib/presentation/navigation/**"
+  - "apps/mobile/flutter/lib/presentation/navigation/**"
   - "flutter_app/lib/presentation/**/router/**"
-  - "apps/flutter/lib/presentation/**/router/**"
+  - "apps/mobile/flutter/lib/presentation/**/router/**"
 ---
 
 # Flutter: Navigation

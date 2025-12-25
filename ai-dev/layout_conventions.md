@@ -1,12 +1,12 @@
-# Canonical Code Layout (Best Practice)
+# Canonical Code Layout
 
-Goal: make file paths self-describing so the right rules load automatically (platform + layer + concern).
+**Goal**: Make file paths self-describing so the right rules load automatically (platform + layer + concern).
 
-This layout is aligned with `project_constitution.md` (Hexagonal Architecture) and with `.cursor/rules/**` glob scoping.
+Aligned with `project_constitution.md` (Hexagonal Architecture) and `.cursor/rules/**` glob scoping.
 
-## Top-level layout
+---
 
-Prefer a stable, discoverable structure:
+## Top-level Layout
 
 ```text
 apps/
@@ -23,15 +23,11 @@ ai-dev/                    # portable AI governance + checklists + logs
 .cursor/rules/             # Cursor enforcement rules (scoped)
 ```
 
-Notes:
+**Notes**: Treat these as the only roots referenced by docs/rules. If real folder differs, create symlink to canonical path. Single-platform repos can omit unused folders.
 
-- Treat these canonical roots as the **only** roots referenced by docs and rules.
-- If the real folder has a different name (e.g., `flutter_app/`), create a symlink to the canonical path (e.g., `apps/flutter/`) using `scripts/platform_paths.json` + `scripts/apply_symlinks.py`.
-- Single-platform repos can omit unused folders; the goal is consistency when you add more platforms later.
+---
 
-## Inside each platform/service: layer-first layout
-
-Within each platform root, prefer **layer-first** structure so paths imply “what kind of code this is”.
+## Layer-First Layout (Inside Each Platform/Service)
 
 ### Flutter / React Native / React Web
 
@@ -41,15 +37,15 @@ Within each platform root, prefer **layer-first** structure so paths imply “wh
     core/
       domain/              # entities/value objects/ports (no infra deps)
       application/         # use-cases, orchestration, mappers
-    infrastructure/        # adapters (API clients, persistence, Firebase SDK, etc.)
+    infrastructure/        # adapters (API clients, persistence, Firebase SDK)
     presentation/
       screens/             # pages
       widgets/             # reusable UI
-      state/               # bloc/riverpod/zustand/redux, etc.
+      state/               # bloc/riverpod/zustand/redux
       navigation/          # routing, routers
 ```
 
-### Node.js service
+### Node.js Service
 
 ```text
 <service_root>/
@@ -88,13 +84,13 @@ Within each platform root, prefer **layer-first** structure so paths imply “wh
   src/test/java/<org>/<app>/
 ```
 
-## Concern folders (optional, when it helps scoping)
+---
 
-If a module grows large, introduce **concern folders** *within a layer*:
+## Concern Folders (Optional, for Large Modules)
+
+Within a layer, introduce concern folders when module grows large:
 
 - `presentation/state/auth/**` vs `presentation/state/todos/**`
 - `infrastructure/networking/**` vs `infrastructure/storage/**`
 
-This improves rule scoping and keeps AI from mixing concerns.
-
-
+Improves rule scoping and keeps AI from mixing concerns.

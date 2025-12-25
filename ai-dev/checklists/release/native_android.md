@@ -2,7 +2,7 @@
 
 ## Build & smoke
 
-- Release build succeeds from `apps/android/`:
+- Release build succeeds from `apps/mobile/android/`:
   - `./gradlew assembleRelease` (or equivalent)
 - App launches and critical flows work on device/emulator.
 
@@ -18,5 +18,3 @@
 
 - Any new permissions reviewed and justified.
 - Permission prompts tested (allow + deny).
-
-

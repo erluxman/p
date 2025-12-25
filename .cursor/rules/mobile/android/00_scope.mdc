@@ -1,0 +1,19 @@
+---
+description: Native Android rules index (split by concern).
+globs:
+  - "apps/mobile/android/**"
+---
+
+# Mobile: Native Android (Index)
+
+## Rule files (by concern)
+
+- `architecture.mdc`: layer boundaries (core/infrastructure/presentation)
+- `ui.mdc`: UI boundaries (no business logic in UI)
+- `performance.mdc`: memory management, coroutines, background work
+- `networking.mdc`: Retrofit, OkHttp, error handling
+- `state.mdc`: ViewModel, LiveData, StateFlow patterns
+- `error_handling.mdc`: sealed classes, Result types, exception handling
+- `accessibility.mdc`: TalkBack, content descriptions, a11y support
+- `testing.mdc`: testing expectations
+- `security.mdc`: no secrets, safe logging, safe auth changes

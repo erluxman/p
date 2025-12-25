@@ -15,7 +15,7 @@
 
 - New logic has tests.
 - Bug fixes include a repro test that fails before the fix.
-- Coverage meets project targets (see `.cursorrules`).
+- Coverage meets project targets (see platform-specific testing rules in `.cursor/rules/[platform]/testing.mdc`).
 
 ## Security
 
@@ -27,4 +27,3 @@
 
 - Small cohesive changes (atomic).
 - Naming is clear; minimal comments; no redundant comments.
-

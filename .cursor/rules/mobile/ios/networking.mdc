@@ -1,0 +1,142 @@
+---
+description: Native iOS networking rules (URLSession, Codable, error handling).
+globs:
+  - "apps/mobile/ios/**/Infrastructure/**"
+  - "apps/mobile/ios/**/data/**"
+---
+
+# Native iOS: Networking
+
+- Use URLSession for HTTP requests.
+- Use Codable for JSON encoding/decoding.
+- Map network errors into domain-friendly Result types.
+- Handle timeouts and network failures explicitly.
+- Never hardcode API URLs; use configuration.
+
+## URLSession Setup
+
+```swift
+// Infrastructure/Adapters/API/APIClient.swift
+import Foundation
+
+class APIClient {
+    private let baseURL: URL
+    private let session: URLSession
+    
+    init(baseURL: String) {
+        guard let url = URL(string: baseURL) else {
+            fatalError("Invalid base URL")
+        }
+        self.baseURL = url
+        
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 30
+        configuration.timeoutIntervalForResource = 60
+        
+        self.session = URLSession(configuration: configuration)
+    }
+    
+    func request<T: Decodable>(
+        endpoint: String,
+        method: String = "GET",
+        body: Encodable? = nil
+    ) async throws -> T {
+        var request = URLRequest(url: baseURL.appendingPathComponent(endpoint))
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Add auth token if available
+        if let token = getAuthToken() {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        
+        if let body = body {
+            request.httpBody = try JSONEncoder().encode(body)
+        }
+        
+        let (data, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NetworkError.invalidResponse
+        }
+        
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw NetworkError.httpError(statusCode: httpResponse.statusCode)
+        }
+        
+        return try JSONDecoder().decode(T.self, from: data)
+    }
+}
+```
+
+## Codable Models
+
+```swift
+// Infrastructure/DTO/TodoDTO.swift
+struct TodoDTO: Codable {
+    let id: String
+    let title: String
+    let isCompleted: Bool
+    let createdAt: String
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case isCompleted = "is_completed"
+        case createdAt = "created_at"
+    }
+}
+
+// Domain entity
+struct TodoEntity {
+    let id: String
+    let title: String
+    let isCompleted: Bool
+    let createdAt: Date
+}
+
+// Mapper
+extension TodoDTO {
+    func toDomain() -> TodoEntity {
+        let formatter = ISO8601DateFormatter()
+        return TodoEntity(
+            id: id,
+            title: title,
+            isCompleted: isCompleted,
+            createdAt: formatter.date(from: createdAt) ?? Date()
+        )
+    }
+}
+```
+
+## Error Handling
+
+```swift
+// Core/Application/Types/Result.swift
+enum Result<Success, Failure: Error> {
+    case success(Success)
+    case failure(Failure)
+}
+
+// Infrastructure/Adapters/API/NetworkError.swift
+enum NetworkError: Error {
+    case invalidURL
+    case invalidResponse
+    case httpError(statusCode: Int)
+    case decodingError(Error)
+    case networkError(Error)
+}
+
+// Usage in repository
+class TodoRepositoryImpl: TodoRepository {
+    func getTodos() async -> Result<[TodoEntity], Error> {
+        do {
+            let dtos: [TodoDTO] = try await apiClient.request(endpoint: "todos")
+            let entities = dtos.map { $0.toDomain() }
+            return .success(entities)
+        } catch {
+            return .failure(NetworkError.networkError(error))
+        }
+    }
+}
+```
