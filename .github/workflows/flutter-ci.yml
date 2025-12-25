@@ -111,7 +111,7 @@ jobs:
 
       - name: Run Android integration tests
         uses: reactivecircus/android-emulator-runner@v2
-        working-directory: apps/mobile/flutter
+        # working-directory: apps/mobile/flutter
         with:
           api-level: ${{ matrix.api-level }}
           arch: x86_64
