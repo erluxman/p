@@ -1,0 +1,106 @@
+---
+description: React Native component patterns and boundaries.
+globs:
+  - "react_native_app/**/*.{ts,tsx}"
+  - "apps/mobile/react_native/**/*.{ts,tsx}"
+---
+
+# React Native: Components
+
+- Use functional components with hooks (no class components).
+- No business logic in components; keep it in application/domain layers or dedicated hooks/services.
+- Handle loading/error/empty states explicitly.
+- Prefer small, composable components; avoid large "god components".
+- Use TypeScript for type safety.
+
+## Component Structure
+
+```tsx
+// ✅ GOOD: Functional component with hooks
+import React from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
+
+interface TodoItemProps {
+  todo: TodoEntity;
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+}
+
+export const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete }) => {
+  return (
+    <View>
+      <Text>{todo.title}</Text>
+      <TouchableOpacity onPress={() => onToggle(todo.id)}>
+        <Text>{todo.isCompleted ? '✓' : '○'}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => onDelete(todo.id)}>
+        <Text>Delete</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+// ❌ BAD: Class component (deprecated)
+class TodoItem extends React.Component<TodoItemProps> {
+  render() {
+    // ...
+  }
+}
+```
+
+## Business Logic Separation
+
+```tsx
+// ✅ GOOD: Business logic in custom hook
+import { useTodoUseCase } from '../hooks/useTodoUseCase';
+
+export const TodoListScreen: React.FC = () => {
+  const { todos, isLoading, error, createTodo, deleteTodo } = useTodoUseCase();
+  
+  if (isLoading) return <LoadingSpinner />;
+  if (error) return <ErrorMessage error={error} />;
+  if (todos.length === 0) return <EmptyState />;
+  
+  return (
+    <FlatList
+      data={todos}
+      renderItem={({ item }) => <TodoItem todo={item} />}
+    />
+  );
+};
+
+// ❌ BAD: Business logic in component
+export const TodoListScreen: React.FC = () => {
+  const [todos, setTodos] = useState([]);
+  
+  useEffect(() => {
+    // Direct API call in component - WRONG!
+    fetch('/api/todos').then(res => res.json()).then(setTodos);
+  }, []);
+  
+  // ...
+};
+```
+
+## State Handling
+
+```tsx
+// ✅ GOOD: Explicit loading/error/empty states
+export const TodoListScreen: React.FC = () => {
+  const { todos, isLoading, error } = useTodos();
+  
+  if (isLoading) {
+    return <ActivityIndicator />;
+  }
+  
+  if (error) {
+    return <ErrorView error={error} onRetry={refetch} />;
+  }
+  
+  if (todos.length === 0) {
+    return <EmptyState message="No todos yet" />;
+  }
+  
+  return <TodoList todos={todos} />;
+};
+```

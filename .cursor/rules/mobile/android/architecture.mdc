@@ -1,0 +1,277 @@
+---
+description: Native Android architecture boundaries.
+globs:
+  - "apps/mobile/android/**/core/**"
+  - "apps/mobile/android/**/infrastructure/**"
+  - "apps/mobile/android/**/presentation/**"
+---
+
+# Native Android: Architecture
+
+- Respect hexagonal boundaries: domain/application must not import Android/framework infrastructure.
+- Keep business logic out of UI; UI reads state and dispatches intents.
+- Follow dependency rule: dependencies point inward (domain ← application ← infrastructure/presentation).
+
+## Hexagonal Architecture Layers
+
+```text
+app/src/main/java/com/erluxman/productive/
+├── core/
+│   ├── domain/              # Pure business logic (no Android dependencies)
+│   │   ├── entities/
+│   │   ├── repositories/   # Interfaces only
+│   │   └── use_cases/
+│   └── application/         # Application services (no Android dependencies)
+│       └── use_cases/
+├── infrastructure/          # Android-specific implementations
+│   ├── repositories/        # Repository implementations
+│   ├── api/                 # Network clients
+│   └── database/            # Room, SQLite, etc.
+└── presentation/           # Android UI layer
+    ├── ui/                  # Compose/Views
+    └── viewmodels/          # ViewModels
+```
+
+## Domain Layer (Core Business Logic)
+
+```kotlin
+// ✅ GOOD: Domain layer has no Android dependencies
+// core/domain/entities/TodoEntity.kt
+package com.erluxman.productive.core.domain.entities
+
+data class TodoEntity(
+    val id: String,
+    val title: String,
+    val isCompleted: Boolean,
+    val createdAt: Long
+)
+
+// core/domain/repositories/TodoRepository.kt
+package com.erluxman.productive.core.domain.repositories
+
+interface TodoRepository {
+    suspend fun getTodos(): Result<List<TodoEntity>>
+    suspend fun getById(id: String): Result<TodoEntity>
+    suspend fun create(title: String): Result<TodoEntity>
+    suspend fun update(todo: TodoEntity): Result<TodoEntity>
+    suspend fun delete(id: String): Result<Unit>
+}
+
+// ❌ BAD: Domain importing Android/framework code
+import android.content.Context // WRONG!
+import androidx.room.Entity // WRONG!
+```
+
+## Application Layer (Use Cases)
+
+```kotlin
+// ✅ GOOD: Application layer orchestrates domain logic
+// core/application/use_cases/CreateTodoUseCase.kt
+package com.erluxman.productive.core.application.use_cases
+
+import com.erluxman.productive.core.domain.entities.TodoEntity
+import com.erluxman.productive.core.domain.repositories.TodoRepository
+
+class CreateTodoUseCase(
+    private val repository: TodoRepository
+) {
+    suspend fun execute(title: String): Result<TodoEntity> {
+        if (title.isBlank()) {
+            return Result.failure(ValidationError("Title cannot be empty"))
+        }
+
+        return repository.create(title.trim())
+    }
+}
+
+// ❌ BAD: Application layer importing Android code
+import android.content.Context // WRONG!
+import androidx.lifecycle.ViewModel // WRONG!
+```
+
+## Infrastructure Layer (Android Implementations)
+
+```kotlin
+// ✅ GOOD: Infrastructure implements domain interfaces
+// infrastructure/repositories/TodoRepositoryImpl.kt
+package com.erluxman.productive.infrastructure.repositories
+
+import com.erluxman.productive.core.domain.entities.TodoEntity
+import com.erluxman.productive.core.domain.repositories.TodoRepository
+import com.erluxman.productive.infrastructure.api.TodoApi
+import com.erluxman.productive.infrastructure.database.TodoDao
+
+class TodoRepositoryImpl(
+    private val api: TodoApi,
+    private val dao: TodoDao
+) : TodoRepository {
+
+    override suspend fun getTodos(): Result<List<TodoEntity>> {
+        return try {
+            // Try local first
+            val localTodos = dao.getAll()
+            if (localTodos.isNotEmpty()) {
+                Result.success(localTodos.map { it.toEntity() })
+            } else {
+                // Fetch from API
+                val remoteTodos = api.getTodos()
+                // Cache locally
+                dao.insertAll(remoteTodos.map { it.toDatabaseModel() })
+                Result.success(remoteTodos.map { it.toEntity() })
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ... other methods
+}
+
+// ✅ GOOD: Infrastructure can use Android frameworks
+import androidx.room.Dao // OK - infrastructure layer
+import retrofit2.http.GET // OK - infrastructure layer
+```
+
+## Presentation Layer (UI)
+
+```kotlin
+// ✅ GOOD: Presentation depends on application layer
+// presentation/viewmodels/TodoViewModel.kt
+package com.erluxman.productive.presentation.viewmodels
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.erluxman.productive.core.application.use_cases.CreateTodoUseCase
+import com.erluxman.productive.core.application.use_cases.GetTodosUseCase
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+
+class TodoViewModel(
+    private val getTodosUseCase: GetTodosUseCase,
+    private val createTodoUseCase: CreateTodoUseCase
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow<TodoUiState>(TodoUiState.Loading)
+    val uiState: StateFlow<TodoUiState> = _uiState.asStateFlow()
+
+    init {
+        loadTodos()
+    }
+
+    fun loadTodos() {
+        viewModelScope.launch {
+            _uiState.value = TodoUiState.Loading
+            when (val result = getTodosUseCase.execute()) {
+                is Result.Success -> {
+                    _uiState.value = TodoUiState.Success(result.data)
+                }
+                is Result.Error -> {
+                    _uiState.value = TodoUiState.Error(result.exception.message ?: "Unknown error")
+                }
+            }
+        }
+    }
+
+    fun createTodo(title: String) {
+        viewModelScope.launch {
+            when (val result = createTodoUseCase.execute(title)) {
+                is Result.Success -> {
+                    loadTodos() // Refresh list
+                }
+                is Result.Error -> {
+                    _uiState.value = TodoUiState.Error(result.exception.message ?: "Failed to create todo")
+                }
+            }
+        }
+    }
+}
+
+// ❌ BAD: Presentation directly accessing infrastructure
+import com.erluxman.productive.infrastructure.api.TodoApi // WRONG! Use use case instead
+```
+
+## Dependency Injection
+
+```kotlin
+// ✅ GOOD: Use dependency injection to wire layers
+// Using Hilt
+@Module
+@InstallIn(SingletonComponent::class)
+object AppModule {
+
+    @Provides
+    @Singleton
+    fun provideTodoApi(): TodoApi {
+        return Retrofit.Builder()
+            .baseUrl("https://api.example.com")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(TodoApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTodoRepository(
+        api: TodoApi,
+        dao: TodoDao
+    ): TodoRepository {
+        return TodoRepositoryImpl(api, dao)
+    }
+
+    @Provides
+    fun provideCreateTodoUseCase(
+        repository: TodoRepository
+    ): CreateTodoUseCase {
+        return CreateTodoUseCase(repository)
+    }
+}
+
+@HiltViewModel
+class TodoViewModel @Inject constructor(
+    private val getTodosUseCase: GetTodosUseCase,
+    private val createTodoUseCase: CreateTodoUseCase
+) : ViewModel() {
+    // ...
+}
+```
+
+## Dependency Rule
+
+```text
+┌─────────────────────────────────────┐
+│         Presentation                │  ← Can depend on Application
+│  (UI, ViewModels, Activities)        │
+└──────────────┬──────────────────────┘
+               │ depends on
+               ▼
+┌─────────────────────────────────────┐
+│         Application                  │  ← Can depend on Domain
+│      (Use Cases, Services)           │
+└──────────────┬──────────────────────┘
+               │ depends on
+               ▼
+┌─────────────────────────────────────┐
+│           Domain                     │  ← No dependencies
+│  (Entities, Repository Interfaces)    │
+└─────────────────────────────────────┘
+               ▲
+               │ implements
+┌──────────────┴──────────────────────┐
+│       Infrastructure                 │  ← Implements Domain interfaces
+│  (Repository Impl, API, Database)    │
+└─────────────────────────────────────┘
+```
+
+## Architecture Best Practices
+
+- **Domain layer**: Pure Kotlin/Java, no Android dependencies.
+- **Application layer**: Pure Kotlin/Java, depends only on domain.
+- **Infrastructure layer**: Can use Android frameworks, implements domain interfaces.
+- **Presentation layer**: Can use Android frameworks, depends on application layer.
+- Use dependency injection (Hilt, Koin, or manual DI).
+- Keep business logic in use cases, not in ViewModels or UI.
+- ViewModels should only orchestrate UI state and call use cases.
+- UI should only render state and dispatch user actions.
+- Use Result types for error handling.
+- Keep layers loosely coupled through interfaces.

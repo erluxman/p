@@ -1,18 +1,33 @@
-# Milestones (AI-visible)
+# Milestones (Standup Format)
 
-Purpose: keep long-term project intent visible across chat sessions so work stays aligned.
+⚠️ **Template file** - Only include in LLM context when entries exist below.
 
-## Current milestone
+**Purpose**: Keep long-term project intent visible across chat sessions. Use "Standup" format.
+
+---
+
+## Current Milestone
 
 - **Milestone**: TBD
 - **Goal**: TBD
-- **Definition of done**: TBD
+- **Definition of Done**: TBD
 
-## Upcoming milestones
+**Standup Format**:
+
+- **Goal**: What we're trying to achieve
+- **Attempts**: What we've tried
+- **Roadblocks**: What's blocking us
+
+---
+
+## Upcoming Milestones
 
 - TBD
 
-## Completed milestones
+---
+
+## Completed Milestones
+
+**Note**: Prune completed tasks into historical archive to save tokens. Keep only active/upcoming milestones in context.
 
 - TBD
-

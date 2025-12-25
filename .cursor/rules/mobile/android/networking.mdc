@@ -1,0 +1,104 @@
+---
+description: Native Android networking rules (Retrofit, OkHttp, error handling).
+globs:
+  - "apps/mobile/android/**/infrastructure/**"
+  - "apps/mobile/android/**/data/**"
+---
+
+# Native Android: Networking
+
+- Use Retrofit for REST API clients.
+- Use OkHttp interceptors for logging, authentication, error handling.
+- Map network errors into domain-friendly Result types.
+- Handle timeouts and network failures explicitly.
+- Never hardcode API URLs; use configuration.
+
+## Retrofit Setup
+
+```kotlin
+// infrastructure/adapters/api/TodoApi.kt
+interface TodoApi {
+    @GET("todos")
+    suspend fun getTodos(): Response<List<TodoDto>>
+    
+    @POST("todos")
+    suspend fun createTodo(@Body todo: CreateTodoDto): Response<TodoDto>
+}
+
+// infrastructure/config/NetworkModule.kt
+@Module
+@InstallIn(SingletonComponent::class)
+object NetworkModule {
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor(HttpLoggingInterceptor().apply {
+                level = if (BuildConfig.DEBUG) {
+                    HttpLoggingInterceptor.Level.BODY
+                } else {
+                    HttpLoggingInterceptor.Level.NONE
+                }
+            })
+            .addInterceptor(AuthInterceptor())
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideTodoApi(client: OkHttpClient): TodoApi {
+        return Retrofit.Builder()
+            .baseUrl(BuildConfig.API_BASE_URL) // From config, not hardcoded
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(TodoApi::class.java)
+    }
+}
+```
+
+## Error Handling
+
+```kotlin
+// core/application/types/Result.kt
+sealed class Result<out T> {
+    data class Success<T>(val data: T) : Result<T>()
+    data class Error(val exception: Throwable) : Result<Nothing>()
+}
+
+// infrastructure/adapters/repositories/TodoRepositoryImpl.kt
+class TodoRepositoryImpl(
+    private val api: TodoApi
+) : TodoRepository {
+    override suspend fun getTodos(): Result<List<Todo>> {
+        return try {
+            val response = api.getTodos()
+            if (response.isSuccessful) {
+                Result.Success(response.body()?.map { it.toDomain() } ?: emptyList())
+            } else {
+                Result.Error(HttpException(response))
+            }
+        } catch (e: IOException) {
+            Result.Error(NetworkException("Network error", e))
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+}
+```
+
+## Interceptors
+
+```kotlin
+// infrastructure/adapters/api/AuthInterceptor.kt
+class AuthInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request().newBuilder()
+            .addHeader("Authorization", "Bearer ${getToken()}")
+            .build()
+        return chain.proceed(request)
+    }
+}
+```

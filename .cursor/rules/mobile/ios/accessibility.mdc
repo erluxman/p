@@ -1,0 +1,118 @@
+---
+description: Native iOS accessibility rules (VoiceOver, accessibility labels, dynamic type).
+globs:
+  - "apps/mobile/ios/**/Presentation/**"
+---
+
+# Native iOS: Accessibility
+
+- All interactive elements must be accessible to screen readers (VoiceOver).
+- Provide accessibility labels for all UI elements.
+- Support Dynamic Type for text scaling.
+- Ensure sufficient color contrast (WCAG AA minimum).
+- Test with VoiceOver enabled.
+
+## Accessibility Labels (SwiftUI)
+
+```swift
+// ✅ GOOD: Accessibility labels in SwiftUI
+struct TodoItemView: View {
+    let todo: Todo
+    
+    var body: some View {
+        HStack {
+            Text(todo.title)
+            Button(action: { toggleTodo() }) {
+                Image(systemName: todo.isCompleted ? "checkmark.circle.fill" : "circle")
+            }
+            .accessibilityLabel(todo.isCompleted ? "Mark as incomplete" : "Mark as complete")
+            .accessibilityHint("Double tap to toggle todo completion")
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Todo: \(todo.title), \(todo.isCompleted ? "completed" : "not completed")")
+    }
+}
+
+// ❌ BAD: Missing accessibility labels
+Button(action: { toggleTodo() }) {
+    Image(systemName: "checkmark")
+} // VoiceOver can't describe this!
+```
+
+## Accessibility Labels (UIKit)
+
+```swift
+// ✅ GOOD: Accessibility labels in UIKit
+let button = UIButton(type: .system)
+button.setImage(UIImage(systemName: "trash"), for: .normal)
+button.accessibilityLabel = "Delete todo"
+button.accessibilityHint = "Double tap to delete this todo"
+button.accessibilityTraits = [.button]
+
+// ❌ BAD: Missing accessibility labels
+let button = UIButton(type: .system)
+button.setImage(UIImage(systemName: "trash"), for: .normal)
+// VoiceOver can't describe this!
+```
+
+## Dynamic Type
+
+```swift
+// ✅ GOOD: Support Dynamic Type
+struct TodoTitleView: View {
+    let title: String
+    
+    var body: some View {
+        Text(title)
+            .font(.body) // Automatically scales with Dynamic Type
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // Limit max size if needed
+    }
+}
+
+// For fixed-size text (like icons)
+Text("✓")
+    .font(.system(size: 16))
+    .dynamicTypeSize(.medium) // Fixed size
+```
+
+## Color Contrast
+
+- Use system colors that meet WCAG AA contrast ratios.
+- Test with accessibility tools (Accessibility Inspector).
+- Never rely solely on color to convey information.
+
+```swift
+// ✅ GOOD: Sufficient color contrast
+Text("Error message")
+    .foregroundColor(.red) // High contrast with white background
+
+// Use semantic colors
+Text("Success")
+    .foregroundColor(.systemGreen)
+```
+
+## Accessibility Traits
+
+```swift
+// ✅ GOOD: Proper accessibility traits
+Button("Create Todo") {
+    createTodo()
+}
+.accessibilityTraits(.button)
+
+// For custom views
+struct CustomButton: View {
+    var body: some View {
+        // Custom button implementation
+    }
+    .accessibilityAddTraits(.isButton)
+}
+```
+
+## Testing Accessibility
+
+- Enable VoiceOver in Settings > Accessibility > VoiceOver.
+- Navigate through the app using only VoiceOver gestures.
+- Verify all interactive elements are accessible.
+- Test with different Dynamic Type sizes.
+- Use Accessibility Inspector in Xcode.

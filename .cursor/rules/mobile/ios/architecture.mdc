@@ -1,0 +1,344 @@
+---
+description: Native iOS architecture boundaries.
+globs:
+  - "apps/mobile/ios/**/Core/**"
+  - "apps/mobile/ios/**/Infrastructure/**"
+  - "apps/mobile/ios/**/Presentation/**"
+---
+
+# Native iOS: Architecture
+
+- Respect hexagonal boundaries: domain/application must not import iOS/framework infrastructure.
+- Keep business logic out of UI; UI renders state and dispatches intents.
+- Follow dependency rule: dependencies point inward (domain ← application ← infrastructure/presentation).
+
+## Hexagonal Architecture Layers
+
+```text
+productive/
+├── Core/
+│   ├── Domain/              # Pure business logic (no iOS dependencies)
+│   │   ├── Entities/
+│   │   ├── Repositories/    # Protocols only
+│   │   └── UseCases/
+│   └── Application/         # Application services (no iOS dependencies)
+│       └── UseCases/
+├── Infrastructure/          # iOS-specific implementations
+│   ├── Repositories/        # Repository implementations
+│   ├── API/                 # URLSession, Alamofire, etc.
+│   └── Database/            # Core Data, SQLite, etc.
+└── Presentation/            # iOS UI layer
+    ├── Views/               # SwiftUI/UIKit views
+    └── ViewModels/          # ViewModels
+```
+
+## Domain Layer (Core Business Logic)
+
+```swift
+// ✅ GOOD: Domain layer has no iOS dependencies
+// Core/Domain/Entities/TodoEntity.swift
+import Foundation
+
+struct TodoEntity: Identifiable, Equatable {
+    let id: String
+    let title: String
+    let isCompleted: Bool
+    let createdAt: Date
+}
+
+// Core/Domain/Repositories/TodoRepository.swift
+import Foundation
+
+protocol TodoRepository {
+    func getTodos() async -> Result<[TodoEntity], Error>
+    func getById(id: String) async -> Result<TodoEntity, Error>
+    func create(title: String) async -> Result<TodoEntity, Error>
+    func update(_ todo: TodoEntity) async -> Result<TodoEntity, Error>
+    func delete(id: String) async -> Result<Void, Error>
+}
+
+// ❌ BAD: Domain importing iOS/framework code
+import SwiftUI // WRONG!
+import UIKit // WRONG!
+import CoreData // WRONG!
+```
+
+## Application Layer (Use Cases)
+
+```swift
+// ✅ GOOD: Application layer orchestrates domain logic
+// Core/Application/UseCases/CreateTodoUseCase.swift
+import Foundation
+
+class CreateTodoUseCase {
+    private let repository: TodoRepository
+
+    init(repository: TodoRepository) {
+        self.repository = repository
+    }
+
+    func execute(title: String) async -> Result<TodoEntity, Error> {
+        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return .failure(ValidationError("Title cannot be empty"))
+        }
+
+        return await repository.create(title: title.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+}
+
+// ❌ BAD: Application layer importing iOS code
+import SwiftUI // WRONG!
+import UIKit // WRONG!
+import Combine // WRONG! (unless specifically needed for reactive streams)
+```
+
+## Infrastructure Layer (iOS Implementations)
+
+```swift
+// ✅ GOOD: Infrastructure implements domain protocols
+// Infrastructure/Repositories/TodoRepositoryImpl.swift
+import Foundation
+
+class TodoRepositoryImpl: TodoRepository {
+    private let api: TodoAPI
+    private let database: TodoDatabase
+
+    init(api: TodoAPI, database: TodoDatabase) {
+        self.api = api
+        self.database = database
+    }
+
+    func getTodos() async -> Result<[TodoEntity], Error> {
+        do {
+            // Try local first
+            let localTodos = try await database.fetchAll()
+            if !localTodos.isEmpty {
+                return .success(localTodos.map { $0.toEntity() })
+            }
+
+            // Fetch from API
+            let remoteTodos = try await api.fetchTodos()
+            // Cache locally
+            try await database.saveAll(remoteTodos.map { $0.toDatabaseModel() })
+            return .success(remoteTodos.map { $0.toEntity() })
+        } catch {
+            return .failure(error)
+        }
+    }
+
+    // ... other methods
+}
+
+// ✅ GOOD: Infrastructure can use iOS frameworks
+import Foundation // OK - infrastructure layer
+import CoreData // OK - infrastructure layer
+import Combine // OK - infrastructure layer (if needed)
+```
+
+## Presentation Layer (UI)
+
+```swift
+// ✅ GOOD: Presentation depends on application layer
+// Presentation/ViewModels/TodoViewModel.swift
+import Foundation
+import Combine
+
+@MainActor
+class TodoViewModel: ObservableObject {
+    @Published var state: TodoState = .idle
+
+    private let getTodosUseCase: GetTodosUseCase
+    private let createTodoUseCase: CreateTodoUseCase
+
+    init(
+        getTodosUseCase: GetTodosUseCase,
+        createTodoUseCase: CreateTodoUseCase
+    ) {
+        self.getTodosUseCase = getTodosUseCase
+        self.createTodoUseCase = createTodoUseCase
+    }
+
+    func loadTodos() async {
+        state = .loading
+
+        let result = await getTodosUseCase.execute()
+
+        switch result {
+        case .success(let todos):
+            state = .loaded(todos)
+        case .failure(let error):
+            state = .error(error)
+        }
+    }
+
+    func createTodo(title: String) async {
+        let result = await createTodoUseCase.execute(title: title)
+
+        switch result {
+        case .success:
+            await loadTodos() // Refresh list
+        case .failure(let error):
+            state = .error(error)
+        }
+    }
+}
+
+enum TodoState {
+    case idle
+    case loading
+    case loaded([TodoEntity])
+    case error(Error)
+}
+
+// ❌ BAD: Presentation directly accessing infrastructure
+import Infrastructure // WRONG! Use use case instead
+```
+
+## SwiftUI Views
+
+```swift
+// ✅ GOOD: View depends on ViewModel (application layer)
+// Presentation/Views/TodoListView.swift
+import SwiftUI
+
+struct TodoListView: View {
+    @StateObject private var viewModel: TodoViewModel
+
+    init(viewModel: TodoViewModel) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    var body: some View {
+        Group {
+            switch viewModel.state {
+            case .idle:
+                EmptyView()
+            case .loading:
+                ProgressView()
+            case .error(let error):
+                ErrorView(error: error) {
+                    Task { await viewModel.loadTodos() }
+                }
+            case .loaded(let todos):
+                List(todos) { todo in
+                    TodoItemView(todo: todo)
+                }
+            }
+        }
+        .task {
+            await viewModel.loadTodos()
+        }
+    }
+}
+
+// ❌ BAD: View directly accessing repository
+struct TodoListView: View {
+    @State private var todos: [TodoEntity] = []
+
+    var body: some View {
+        List(todos) { todo in
+            TodoItemView(todo: todo)
+        }
+        .task {
+            // Direct repository access - WRONG!
+            let result = await repository.getTodos() // Should use ViewModel
+            // ...
+        }
+    }
+}
+```
+
+## Dependency Injection
+
+```swift
+// ✅ GOOD: Use dependency injection to wire layers
+// Using manual DI or a DI framework
+class AppContainer {
+    static let shared = AppContainer()
+
+    // Infrastructure
+    lazy var todoAPI: TodoAPI = {
+        TodoAPIImpl(baseURL: AppConfig.apiBaseURL)
+    }()
+
+    lazy var todoDatabase: TodoDatabase = {
+        TodoDatabaseImpl()
+    }()
+
+    // Repository
+    lazy var todoRepository: TodoRepository = {
+        TodoRepositoryImpl(api: todoAPI, database: todoDatabase)
+    }()
+
+    // Use Cases
+    lazy var getTodosUseCase: GetTodosUseCase = {
+        GetTodosUseCase(repository: todoRepository)
+    }()
+
+    lazy var createTodoUseCase: CreateTodoUseCase = {
+        CreateTodoUseCase(repository: todoRepository)
+    }()
+
+    // ViewModels
+    func makeTodoViewModel() -> TodoViewModel {
+        TodoViewModel(
+            getTodosUseCase: getTodosUseCase,
+            createTodoUseCase: createTodoUseCase
+        )
+    }
+}
+
+// Usage in SwiftUI
+@main
+struct ProductiveApp: App {
+    var body: some Scene {
+        WindowGroup {
+            TodoListView(
+                viewModel: AppContainer.shared.makeTodoViewModel()
+            )
+        }
+    }
+}
+```
+
+## Dependency Rule
+
+```text
+┌─────────────────────────────────────┐
+│         Presentation                │  ← Can depend on Application
+│  (Views, ViewModels, ViewControllers)│
+└──────────────┬──────────────────────┘
+               │ depends on
+               ▼
+┌─────────────────────────────────────┐
+│         Application                  │  ← Can depend on Domain
+│      (Use Cases, Services)           │
+└──────────────┬──────────────────────┘
+               │ depends on
+               ▼
+┌─────────────────────────────────────┐
+│           Domain                     │  ← No dependencies
+│  (Entities, Repository Protocols)    │
+└─────────────────────────────────────┘
+               ▲
+               │ implements
+┌──────────────┴──────────────────────┐
+│       Infrastructure                 │  ← Implements Domain protocols
+│  (Repository Impl, API, Database)    │
+└─────────────────────────────────────┘
+```
+
+## Architecture Best Practices
+
+- **Domain layer**: Pure Swift, no iOS dependencies (Foundation only).
+- **Application layer**: Pure Swift, depends only on domain.
+- **Infrastructure layer**: Can use iOS frameworks, implements domain protocols.
+- **Presentation layer**: Can use iOS frameworks, depends on application layer.
+- Use dependency injection (manual DI, Swinject, or other DI frameworks).
+- Keep business logic in use cases, not in ViewModels or Views.
+- ViewModels should only orchestrate UI state and call use cases.
+- Views should only render state and dispatch user actions.
+- Use Result types for error handling.
+- Keep layers loosely coupled through protocols.
+- Use `@MainActor` for UI-related code.
+- Prefer `async/await` over completion handlers.

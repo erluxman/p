@@ -1,0 +1,127 @@
+---
+description: Native Android state management rules (ViewModel, LiveData, StateFlow).
+globs:
+  - "apps/mobile/android/**/presentation/**"
+---
+
+# Native Android: State Management
+
+- Use ViewModel for UI-related data that survives configuration changes.
+- Use LiveData or StateFlow for reactive state (StateFlow preferred for new code).
+- Keep business logic in use cases, not in ViewModel.
+- Use SavedStateHandle for data that must survive process death.
+- Never expose MutableLiveData/MutableStateFlow directly; expose read-only versions.
+
+## ViewModel Pattern
+
+```kotlin
+// presentation/viewmodels/TodoViewModel.kt
+class TodoViewModel(
+    private val getTodosUseCase: GetTodosUseCase
+) : ViewModel() {
+    
+    private val _uiState = MutableStateFlow<TodoUiState>(TodoUiState.Loading)
+    val uiState: StateFlow<TodoUiState> = _uiState.asStateFlow()
+    
+    init {
+        loadTodos()
+    }
+    
+    private fun loadTodos() {
+        viewModelScope.launch {
+            _uiState.value = TodoUiState.Loading
+            when (val result = getTodosUseCase.execute()) {
+                is Result.Success -> {
+                    _uiState.value = TodoUiState.Success(result.data)
+                }
+                is Result.Error -> {
+                    _uiState.value = TodoUiState.Error(result.exception.message ?: "Unknown error")
+                }
+            }
+        }
+    }
+}
+
+// presentation/ui/TodoUiState.kt
+sealed class TodoUiState {
+    object Loading : TodoUiState()
+    data class Success(val todos: List<Todo>) : TodoUiState()
+    data class Error(val message: String) : TodoUiState()
+}
+```
+
+## LiveData (Legacy Support)
+
+```kotlin
+// ✅ GOOD: Expose read-only LiveData
+class TodoViewModel : ViewModel() {
+    private val _todos = MutableLiveData<List<Todo>>()
+    val todos: LiveData<List<Todo>> = _todos
+    
+    fun loadTodos() {
+        viewModelScope.launch {
+            _todos.value = repository.getTodos()
+        }
+    }
+}
+
+// ❌ BAD: Exposing MutableLiveData
+class TodoViewModel : ViewModel() {
+    val todos = MutableLiveData<List<Todo>>() // Can be modified from outside!
+}
+```
+
+## StateFlow (Preferred)
+
+```kotlin
+// ✅ GOOD: StateFlow with sealed class states
+class TodoViewModel : ViewModel() {
+    private val _uiState = MutableStateFlow<TodoUiState>(TodoUiState.Loading)
+    val uiState: StateFlow<TodoUiState> = _uiState.asStateFlow()
+    
+    fun loadTodos() {
+        viewModelScope.launch {
+            _uiState.value = TodoUiState.Loading
+            // ... load data
+        }
+    }
+}
+```
+
+## SavedStateHandle
+
+```kotlin
+// For data that must survive process death
+class TodoViewModel(
+    private val savedStateHandle: SavedStateHandle
+) : ViewModel() {
+    var selectedTodoId: String?
+        get() = savedStateHandle.get<String>("selectedTodoId")
+        set(value) = savedStateHandle.set("selectedTodoId", value)
+}
+```
+
+## Business Logic Separation
+
+```kotlin
+// ✅ GOOD: Business logic in use case
+class GetTodosUseCase(private val repository: TodoRepository) {
+    suspend fun execute(): Result<List<Todo>> {
+        return repository.getTodos()
+    }
+}
+
+// ViewModel only orchestrates UI state
+class TodoViewModel(private val getTodosUseCase: GetTodosUseCase) : ViewModel() {
+    // ViewModel calls use case, maps to UI state
+}
+
+// ❌ BAD: Business logic in ViewModel
+class TodoViewModel : ViewModel() {
+    fun loadTodos() {
+        // Business logic here - WRONG!
+        val todos = api.getTodos().filter { it.isCompleted }
+        // ...
+    }
+}
+```

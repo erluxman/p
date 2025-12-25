@@ -30,7 +30,5 @@
 
 ## Coverage & reporting
 
-- Meets or exceeds coverage targets in `.cursorrules`.
+- Meets or exceeds coverage targets (see platform-specific testing rules in `.cursor/rules/[platform]/testing.mdc`).
 - New code is not introduced without tests unless explicitly approved (and logged as tech debt).
-
-

@@ -1,0 +1,127 @@
+---
+description: React Native accessibility rules (screen readers, a11y props, dynamic type).
+globs:
+  - "react_native_app/**/presentation/**/*.{ts,tsx}"
+  - "apps/mobile/react_native/**/presentation/**/*.{ts,tsx}"
+---
+
+# React Native: Accessibility
+
+- All interactive elements must be accessible to screen readers.
+- Provide `accessibilityLabel` for all interactive components.
+- Support dynamic text scaling (use `allowFontScaling` appropriately).
+- Ensure sufficient color contrast (WCAG AA minimum).
+- Test with screen readers (VoiceOver on iOS, TalkBack on Android).
+
+## Accessibility Labels
+
+```tsx
+// ✅ GOOD: Accessibility labels for all interactive elements
+import { TouchableOpacity, Text, Image } from 'react-native';
+
+<TouchableOpacity
+  accessibilityRole="button"
+  accessibilityLabel="Create new todo"
+  accessibilityHint="Double tap to create a new todo item"
+  onPress={handleCreate}
+>
+  <Text>Create Todo</Text>
+</TouchableOpacity>
+
+<Image
+  source={require('./icon.png')}
+  accessibilityLabel="Delete todo"
+  accessibilityRole="button"
+/>
+
+// ❌ BAD: Missing accessibility labels
+<TouchableOpacity onPress={handleCreate}>
+  <Text>Create Todo</Text>
+</TouchableOpacity>
+```
+
+## Dynamic Text Scaling
+
+```tsx
+// ✅ GOOD: Support text scaling
+<Text
+  style={{ fontSize: 16 }}
+  allowFontScaling={true}
+>
+  Todo title
+</Text>
+
+// For fixed-size text (like icons), disable scaling
+<Text
+  style={{ fontSize: 16 }}
+  allowFontScaling={false}
+>
+  ✓
+</Text>
+```
+
+## Accessibility Roles
+
+```tsx
+// ✅ GOOD: Proper accessibility roles
+<TouchableOpacity
+  accessibilityRole="button"
+  accessibilityLabel="Toggle todo completion"
+>
+  <Text>Toggle</Text>
+</TouchableOpacity>
+
+<TextInput
+  accessibilityRole="textbox"
+  accessibilityLabel="Todo title input"
+  placeholder="Enter todo title"
+/>
+
+<View accessibilityRole="header">
+  <Text>Todo List</Text>
+</View>
+```
+
+## Color Contrast
+
+- Use theme colors that meet WCAG AA contrast ratios (4.5:1 for normal text, 3:1 for large text).
+- Test with accessibility tools.
+- Never rely solely on color to convey information.
+
+```tsx
+// ✅ GOOD: Sufficient color contrast
+<Text style={{ color: '#000000', backgroundColor: '#FFFFFF' }}>
+  High contrast text
+</Text>
+
+// ❌ BAD: Low contrast
+<Text style={{ color: '#CCCCCC', backgroundColor: '#FFFFFF' }}>
+  Low contrast text (hard to read)
+</Text>
+```
+
+## Focus Management
+
+```tsx
+// ✅ GOOD: Manage focus for keyboard navigation
+import { TouchableOpacity } from 'react-native';
+
+<TouchableOpacity
+  accessible={true}
+  accessibilityRole="button"
+  accessibilityLabel="Delete todo"
+  onPress={handleDelete}
+  onFocus={() => {
+    // Handle focus state
+  }}
+>
+  <Text>Delete</Text>
+</TouchableOpacity>
+```
+
+## Testing Accessibility
+
+- Enable VoiceOver on iOS or TalkBack on Android.
+- Navigate through the app using only screen reader gestures.
+- Verify all interactive elements are accessible.
+- Test with different text size settings.

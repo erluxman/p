@@ -1,0 +1,145 @@
+---
+description: Native iOS performance rules (memory management, async/await, background tasks).
+globs:
+  - "apps/mobile/ios/**"
+---
+
+# Native iOS: Performance
+
+- Use async/await for concurrency (preferred over completion handlers).
+- Use Task and async contexts for background work.
+- Implement proper memory management (ARC handles most, but watch for retain cycles).
+- Use lazy loading for lists (LazyVStack/LazyHStack in SwiftUI).
+- Optimize image loading and caching.
+- Profile with Instruments to identify bottlenecks.
+
+## Async/Await
+
+```swift
+// ✅ GOOD: Async/await for async work
+class TodoRepository {
+    func fetchTodos() async throws -> [Todo] {
+        let url = URL(string: "\(apiBaseURL)/todos")!
+        let (data, _) = try await URLSession.shared.data(from: url)
+        return try JSONDecoder().decode([Todo].self, from: data)
+    }
+}
+
+// ❌ BAD: Completion handlers (legacy pattern)
+func fetchTodos(completion: @escaping (Result<[Todo], Error>) -> Void) {
+    // More complex, harder to read
+}
+```
+
+## Task and Background Work
+
+```swift
+// ✅ GOOD: Task for background work
+class TodoViewModel: ObservableObject {
+    @Published var todos: [Todo] = []
+    @Published var isLoading = false
+    
+    func loadTodos() {
+        Task {
+            await MainActor.run {
+                isLoading = true
+            }
+            
+            do {
+                let fetchedTodos = try await repository.fetchTodos()
+                await MainActor.run {
+                    self.todos = fetchedTodos
+                    self.isLoading = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.isLoading = false
+                    // Handle error
+                }
+            }
+        }
+    }
+}
+```
+
+## Memory Management
+
+```swift
+// ✅ GOOD: Weak references to avoid retain cycles
+class TodoViewModel: ObservableObject {
+    weak var delegate: TodoViewModelDelegate?
+    
+    // Use [weak self] in closures
+    func fetchData() {
+        Task { [weak self] in
+            guard let self = self else { return }
+            // ...
+        }
+    }
+}
+
+// ❌ BAD: Strong reference cycle
+class TodoViewModel: ObservableObject {
+    var delegate: TodoViewModelDelegate? // Strong reference!
+}
+```
+
+## Lazy Loading (SwiftUI)
+
+```swift
+// ✅ GOOD: LazyVStack for long lists
+struct TodoListView: View {
+    let todos: [Todo]
+    
+    var body: some View {
+        ScrollView {
+            LazyVStack {
+                ForEach(todos) { todo in
+                    TodoItemView(todo: todo)
+                }
+            }
+        }
+    }
+}
+
+// ❌ BAD: VStack renders all items at once
+struct TodoListView: View {
+    let todos: [Todo]
+    
+    var body: some View {
+        ScrollView {
+            VStack {
+                ForEach(todos) { todo in
+                    TodoItemView(todo: todo)
+                }
+            }
+        }
+    }
+}
+```
+
+## Image Loading
+
+```swift
+// ✅ GOOD: AsyncImage with caching
+struct TodoImageView: View {
+    let imageURL: URL
+    
+    var body: some View {
+        AsyncImage(url: imageURL) { phase in
+            switch phase {
+            case .empty:
+                ProgressView()
+            case .success(let image):
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+            case .failure:
+                Image(systemName: "photo")
+            @unknown default:
+                EmptyView()
+            }
+        }
+    }
+}
+```

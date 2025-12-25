@@ -1,0 +1,183 @@
+---
+description: React Native testing rules (Jest, React Native Testing Library, E2E tests).
+globs:
+  - "react_native_app/**/*.{ts,tsx}"
+  - "react_native_app/**/*.test.{ts,tsx}"
+  - "react_native_app/**/*.spec.{ts,tsx}"
+  - "apps/mobile/react_native/**/*.{ts,tsx}"
+  - "apps/mobile/react_native/**/*.test.{ts,tsx}"
+  - "apps/mobile/react_native/**/*.spec.{ts,tsx}"
+---
+
+# React Native: Testing
+
+- Non-trivial logic must have tests.
+- Bug fixes require a repro test that fails before the fix.
+- Prefer tests that assert behavior, not implementation details.
+- Domain layer: 100% coverage target.
+- Application layer: 80% coverage target.
+- Infrastructure layer: 70% coverage target.
+- Presentation layer: 60% coverage target.
+
+## Test Structure
+
+```text
+test/
+├── unit/
+│   ├── domain/
+│   ├── application/
+│   └── infrastructure/
+├── component/
+│   └── presentation/
+└── e2e/
+    └── features/
+```
+
+## Unit Tests
+
+```tsx
+// test/unit/application/use_cases/create_todo_use_case.test.ts
+import { CreateTodoUseCase } from '../../../../src/core/application/use_cases/create_todo_use_case';
+import { TodoRepository } from '../../../../src/core/domain/repositories/todo_repository';
+import * as E from 'fp-ts/Either';
+
+describe('CreateTodoUseCase', () => {
+  let useCase: CreateTodoUseCase;
+  let mockRepository: jest.Mocked<TodoRepository>;
+  
+  beforeEach(() => {
+    mockRepository = {
+      create: jest.fn(),
+    } as any;
+    useCase = new CreateTodoUseCase(mockRepository);
+  });
+  
+  it('should create todo with valid input', async () => {
+    // Arrange
+    const todo = { id: '1', title: 'Test Todo', isCompleted: false };
+    mockRepository.create.mockResolvedValue(todo);
+    
+    // Act
+    const result = await useCase.execute({ title: 'Test Todo' });
+    
+    // Assert
+    expect(E.isRight(result)).toBe(true);
+    E.fold(
+      (error) => fail(`Expected success but got error: ${error}`),
+      (createdTodo) => {
+        expect(createdTodo.title).toBe('Test Todo');
+        expect(mockRepository.create).toHaveBeenCalledTimes(1);
+      }
+    )(result);
+  });
+  
+  it('should fail when title is empty', async () => {
+    // Act
+    const result = await useCase.execute({ title: '' });
+    
+    // Assert
+    expect(E.isLeft(result)).toBe(true);
+    E.fold(
+      (error) => expect(error.message).toContain('required'),
+      (todo) => fail(`Expected error but got success: ${todo}`)
+    )(result);
+  });
+});
+```
+
+## Component Tests
+
+```tsx
+// test/component/presentation/components/todo_item.test.tsx
+import React from 'react';
+import { render, fireEvent } from '@testing-library/react-native';
+import { TodoItem } from '../../../../src/presentation/components/todo_item';
+
+describe('TodoItem', () => {
+  const mockTodo = {
+    id: '1',
+    title: 'Test Todo',
+    isCompleted: false,
+  };
+  
+  it('displays todo title', () => {
+    const { getByText } = render(
+      <TodoItem todo={mockTodo} onToggle={jest.fn()} onDelete={jest.fn()} />
+    );
+    
+    expect(getByText('Test Todo')).toBeTruthy();
+  });
+  
+  it('calls onToggle when toggle button is pressed', () => {
+    const onToggle = jest.fn();
+    const { getByLabelText } = render(
+      <TodoItem todo={mockTodo} onToggle={onToggle} onDelete={jest.fn()} />
+    );
+    
+    fireEvent.press(getByLabelText('Toggle todo completion'));
+    
+    expect(onToggle).toHaveBeenCalledWith('1');
+  });
+  
+  it('displays completed state correctly', () => {
+    const completedTodo = { ...mockTodo, isCompleted: true };
+    const { getByText } = render(
+      <TodoItem todo={completedTodo} onToggle={jest.fn()} onDelete={jest.fn()} />
+    );
+    
+    expect(getByText('✓')).toBeTruthy();
+  });
+});
+```
+
+## E2E Tests (Detox)
+
+```tsx
+// test/e2e/features/todo_flow.e2e.ts
+import { by, device, element, expect as detoxExpect } from 'detox';
+
+describe('Todo Flow', () => {
+  beforeAll(async () => {
+    await device.launchApp();
+  });
+  
+  beforeEach(async () => {
+    await device.reloadReactNative();
+  });
+  
+  it('should create and view todos', async () => {
+    // Navigate to create screen
+    await element(by.id('create-todo-button')).tap();
+    
+    // Enter todo title
+    await element(by.id('todo-title-input')).typeText('New Todo');
+    
+    // Submit
+    await element(by.id('submit-button')).tap();
+    
+    // Verify todo appears in list
+    await detoxExpect(element(by.text('New Todo'))).toBeVisible();
+  });
+  
+  it('should toggle todo completion', async () => {
+    // Find todo item
+    await element(by.id('todo-item-1')).tap();
+    
+    // Toggle completion
+    await element(by.id('toggle-button')).tap();
+    
+    // Verify state changed
+    await detoxExpect(element(by.id('completed-indicator'))).toBeVisible();
+  });
+});
+```
+
+## Test Best Practices
+
+- Use `@testing-library/react-native` for component tests.
+- Use `jest` for unit tests.
+- Use `detox` for E2E tests.
+- Use `fp-ts` Either types in tests to match production code.
+- Mock external dependencies (API, storage, etc.).
+- Test error states and edge cases.
+- Keep tests fast and independent.

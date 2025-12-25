@@ -15,5 +15,3 @@
 
 - Plan for safe rollout (staged if possible).
 - Rollback plan documented for risky changes.
-
-

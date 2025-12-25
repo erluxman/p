@@ -1,0 +1,171 @@
+---
+description: Native iOS error handling rules (Error types, Result types, throwing functions).
+globs:
+  - "apps/mobile/ios/**"
+---
+
+# Native iOS: Error Handling
+
+- Use Swift Error protocol for error types.
+- Use Result types for operations that can fail.
+- Never throw exceptions from use cases; return Result types instead.
+- Map errors to user-friendly messages in the presentation layer.
+- Log errors appropriately; never log sensitive data.
+
+## Error Types
+
+```swift
+// Core/Domain/Errors/AppError.swift
+enum AppError: Error {
+    case validationError(String)
+    case networkError(Error)
+    case serverError(Int)
+    case notFound
+    case unauthorized
+    
+    var message: String {
+        switch self {
+        case .validationError(let message):
+            return message
+        case .networkError(let error):
+            return "Network error: \(error.localizedDescription)"
+        case .serverError(let code):
+            return "Server error (code: \(code))"
+        case .notFound:
+            return "Resource not found"
+        case .unauthorized:
+            return "Unauthorized access"
+        }
+    }
+}
+```
+
+## Result Pattern
+
+```swift
+// Core/Application/Types/Result.swift
+enum Result<Success, Failure: Error> {
+    case success(Success)
+    case failure(Failure)
+    
+    func map<NewSuccess>(_ transform: (Success) -> NewSuccess) -> Result<NewSuccess, Failure> {
+        switch self {
+        case .success(let value):
+            return .success(transform(value))
+        case .failure(let error):
+            return .failure(error)
+        }
+    }
+    
+    func flatMap<NewSuccess>(_ transform: (Success) -> Result<NewSuccess, Failure>) -> Result<NewSuccess, Failure> {
+        switch self {
+        case .success(let value):
+            return transform(value)
+        case .failure(let error):
+            return .failure(error)
+        }
+    }
+}
+
+// Usage in use cases
+class CreateTodoUseCase {
+    func execute(title: String) async -> Result<TodoEntity, AppError> {
+        // Validation
+        guard !title.trimmingCharacters(in: .whitespaces).isEmpty else {
+            return .failure(.validationError("Title cannot be empty"))
+        }
+        
+        do {
+            let todo = try await repository.create(title: title)
+            return .success(todo)
+        } catch {
+            return .failure(.networkError(error))
+        }
+    }
+}
+```
+
+## Presentation Layer Handling
+
+```swift
+// In ViewModel
+class TodoViewModel: ObservableObject {
+    @Published var errorMessage: String?
+    
+    func createTodo(title: String) async {
+        let result = await createTodoUseCase.execute(title: title)
+        
+        switch result {
+        case .success(let todo):
+            await MainActor.run {
+                todos.append(todo)
+                errorMessage = nil
+            }
+        case .failure(let error):
+            await MainActor.run {
+                errorMessage = error.message
+            }
+        }
+    }
+}
+
+// In View
+struct CreateTodoView: View {
+    @StateObject private var viewModel = TodoViewModel()
+    
+    var body: some View {
+        Form {
+            // ...
+            if let error = viewModel.errorMessage {
+                Text(error)
+                    .foregroundColor(.red)
+            }
+        }
+    }
+}
+```
+
+## Throwing Functions
+
+```swift
+// ✅ GOOD: Throwing functions for infrastructure layer
+class TodoRepositoryImpl: TodoRepository {
+    func getTodos() async throws -> [TodoEntity] {
+        let url = URL(string: "\(apiBaseURL)/todos")!
+        let (data, _) = try await URLSession.shared.data(from: url)
+        return try JSONDecoder().decode([TodoEntity].self, from: data)
+    }
+}
+
+// Map to Result in use case
+class GetTodosUseCase {
+    func execute() async -> Result<[TodoEntity], AppError> {
+        do {
+            let todos = try await repository.getTodos()
+            return .success(todos)
+        } catch {
+            return .failure(.networkError(error))
+        }
+    }
+}
+```
+
+## Error Logging
+
+```swift
+// ✅ GOOD: Safe error logging
+func logError(_ error: Error, context: [String: Any] = [:]) {
+    var safeContext = context
+    
+    // Redact sensitive data
+    if let token = safeContext["token"] as? String {
+        safeContext["token"] = "[REDACTED]"
+    }
+    
+    print("Error: \(error.localizedDescription), Context: \(safeContext)")
+    // Send to error reporting service
+}
+
+// ❌ BAD: Logging sensitive data
+print("Error: \(error), Token: \(token)") // Never log tokens!
+```

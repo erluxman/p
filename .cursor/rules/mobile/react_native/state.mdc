@@ -1,0 +1,197 @@
+---
+description: React Native state management rules (Zustand, Redux Toolkit patterns).
+globs:
+  - "react_native_app/**/state/**/*.{ts,tsx}"
+  - "apps/mobile/react_native/**/state/**/*.{ts,tsx}"
+---
+
+# React Native: State Management
+
+- Keep state management in `presentation/state/`, never in components.
+- Prefer Zustand or Redux Toolkit for global state.
+- Use local state (`useState`) for component-specific UI state.
+- Ensure async state has clear lifecycle: loading → success/error → retry.
+- Normalize state structure for complex data.
+
+## Zustand Pattern (Preferred)
+
+```tsx
+// presentation/state/todoStore.ts
+import create from 'zustand';
+import { TodoEntity } from '../../core/domain/entities/todo_entity';
+
+interface TodoState {
+  todos: TodoEntity[];
+  isLoading: boolean;
+  error: Error | null;
+  fetchTodos: () => Promise<void>;
+  createTodo: (title: string) => Promise<void>;
+  toggleTodo: (id: string) => void;
+  deleteTodo: (id: string) => void;
+}
+
+export const useTodoStore = create<TodoState>((set, get) => ({
+  todos: [],
+  isLoading: false,
+  error: null,
+  
+  fetchTodos: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const todos = await todoRepository.getTodos();
+      set({ todos, isLoading: false });
+    } catch (error) {
+      set({ error: error as Error, isLoading: false });
+    }
+  },
+  
+  createTodo: async (title: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const todo = await createTodoUseCase.execute({ title });
+      set((state) => ({
+        todos: [...state.todos, todo],
+        isLoading: false,
+      }));
+    } catch (error) {
+      set({ error: error as Error, isLoading: false });
+    }
+  },
+  
+  toggleTodo: (id: string) => {
+    set((state) => ({
+      todos: state.todos.map(todo =>
+        todo.id === id ? { ...todo, isCompleted: !todo.isCompleted } : todo
+      ),
+    }));
+  },
+  
+  deleteTodo: (id: string) => {
+    set((state) => ({
+      todos: state.todos.filter(todo => todo.id !== id),
+    }));
+  },
+}));
+```
+
+## Redux Toolkit Pattern
+
+```tsx
+// presentation/state/todoSlice.ts
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { TodoEntity } from '../../core/domain/entities/todo_entity';
+
+export const fetchTodos = createAsyncThunk(
+  'todos/fetchTodos',
+  async () => {
+    return await todoRepository.getTodos();
+  }
+);
+
+interface TodoState {
+  todos: TodoEntity[];
+  isLoading: boolean;
+  error: string | null;
+}
+
+const initialState: TodoState = {
+  todos: [],
+  isLoading: false,
+  error: null,
+};
+
+const todoSlice = createSlice({
+  name: 'todos',
+  initialState,
+  reducers: {
+    toggleTodo: (state, action: PayloadAction<string>) => {
+      const todo = state.todos.find(t => t.id === action.payload);
+      if (todo) {
+        todo.isCompleted = !todo.isCompleted;
+      }
+    },
+    deleteTodo: (state, action: PayloadAction<string>) => {
+      state.todos = state.todos.filter(t => t.id !== action.payload);
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchTodos.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchTodos.fulfilled, (state, action) => {
+        state.todos = action.payload;
+        state.isLoading = false;
+      })
+      .addCase(fetchTodos.rejected, (state, action) => {
+        state.error = action.error.message || 'Failed to fetch todos';
+        state.isLoading = false;
+      });
+  },
+});
+
+export const { toggleTodo, deleteTodo } = todoSlice.actions;
+export default todoSlice.reducer;
+```
+
+## Local State vs Global State
+
+```tsx
+// ✅ GOOD: Local state for UI-only concerns
+const TodoItem: React.FC<{ todo: Todo }> = ({ todo }) => {
+  const [isExpanded, setIsExpanded] = useState(false); // UI state only
+  
+  return (
+    <View>
+      <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)}>
+        <Text>{todo.title}</Text>
+      </TouchableOpacity>
+      {isExpanded && <Text>{todo.description}</Text>}
+    </View>
+  );
+};
+
+// ✅ GOOD: Global state for app-wide data
+const TodoListScreen: React.FC = () => {
+  const todos = useTodoStore((state) => state.todos); // Global state
+  const fetchTodos = useTodoStore((state) => state.fetchTodos);
+  
+  useEffect(() => {
+    fetchTodos();
+  }, [fetchTodos]);
+  
+  // ...
+};
+```
+
+## Async State Lifecycle
+
+```tsx
+// ✅ GOOD: Clear async state lifecycle
+interface AsyncState<T> {
+  data: T | null;
+  isLoading: boolean;
+  error: Error | null;
+}
+
+const useTodos = (): AsyncState<Todo[]> => {
+  const [state, setState] = useState<AsyncState<Todo[]>>({
+    data: null,
+    isLoading: false,
+    error: null,
+  });
+  
+  const fetchTodos = useCallback(async () => {
+    setState({ data: null, isLoading: true, error: null });
+    try {
+      const todos = await todoRepository.getTodos();
+      setState({ data: todos, isLoading: false, error: null });
+    } catch (error) {
+      setState({ data: null, isLoading: false, error: error as Error });
+    }
+  }, []);
+  
+  return { ...state, refetch: fetchTodos };
+};
+```

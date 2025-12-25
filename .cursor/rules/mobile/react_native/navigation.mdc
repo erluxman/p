@@ -1,0 +1,131 @@
+---
+description: React Native navigation rules (React Navigation structure, typed routes).
+globs:
+  - "react_native_app/**/navigation/**/*.{ts,tsx}"
+  - "apps/mobile/react_native/**/navigation/**/*.{ts,tsx}"
+---
+
+# React Native: Navigation
+
+- Use React Navigation for navigation (preferred over native navigation).
+- Keep navigation configuration centralized.
+- Prefer typed routes with TypeScript.
+- Avoid navigation decisions inside domain/application code.
+- Use deep linking for better UX.
+
+## Navigation Setup
+
+```tsx
+// navigation/types.ts
+export type RootStackParamList = {
+  Home: undefined;
+  TodoList: undefined;
+  TodoDetail: { todoId: string };
+  CreateTodo: undefined;
+};
+
+// navigation/AppNavigator.tsx
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import type { RootStackParamList } from './types';
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+export const AppNavigator: React.FC = () => {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator>
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="TodoList" component={TodoListScreen} />
+        <Stack.Screen name="TodoDetail" component={TodoDetailScreen} />
+        <Stack.Screen name="CreateTodo" component={CreateTodoScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+};
+```
+
+## Typed Navigation
+
+```tsx
+// ✅ GOOD: Typed navigation hooks
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../navigation/types';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+export const TodoListScreen: React.FC = () => {
+  const navigation = useNavigation<NavigationProp>();
+  
+  const handleTodoPress = (todoId: string) => {
+    navigation.navigate('TodoDetail', { todoId }); // Type-safe!
+  };
+  
+  return (
+    <FlatList
+      data={todos}
+      renderItem={({ item }) => (
+        <TouchableOpacity onPress={() => handleTodoPress(item.id)}>
+          <Text>{item.title}</Text>
+        </TouchableOpacity>
+      )}
+    />
+  );
+};
+
+// ❌ BAD: Untyped navigation
+const navigation = useNavigation();
+navigation.navigate('TodoDetail', { todoId: '123' }); // No type checking!
+```
+
+## Navigation Boundaries
+
+```tsx
+// ✅ GOOD: Navigation in presentation layer only
+// presentation/screens/TodoListScreen.tsx
+export const TodoListScreen: React.FC = () => {
+  const navigation = useNavigation<NavigationProp>();
+  const { todos } = useTodos();
+  
+  const handleCreate = () => {
+    navigation.navigate('CreateTodo');
+  };
+  
+  // ...
+};
+
+// ❌ BAD: Navigation in use case (domain/application layer)
+class CreateTodoUseCase {
+  async execute(params: CreateTodoParams, navigation: NavigationProp) {
+    // Navigation logic here - WRONG!
+    await this.repository.create(params);
+    navigation.navigate('TodoList');
+  }
+}
+```
+
+## Deep Linking
+
+```tsx
+// navigation/linking.ts
+import { LinkingOptions } from '@react-navigation/native';
+import type { RootStackParamList } from './types';
+
+export const linking: LinkingOptions<RootStackParamList> = {
+  prefixes: ['myapp://', 'https://myapp.com'],
+  config: {
+    screens: {
+      Home: '',
+      TodoList: 'todos',
+      TodoDetail: 'todos/:todoId',
+      CreateTodo: 'todos/create',
+    },
+  },
+};
+
+// App.tsx
+<NavigationContainer linking={linking}>
+  <AppNavigator />
+</NavigationContainer>
+```

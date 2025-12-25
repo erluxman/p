@@ -14,5 +14,3 @@
 
 - Timeouts/retries reviewed for external calls.
 - Rollback plan documented if the change is risky.
-
-

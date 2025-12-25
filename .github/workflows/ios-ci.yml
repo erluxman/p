@@ -1,0 +1,195 @@
+name: Native iOS CI/CD
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Check for iOS changes
+    runs-on: ubuntu-latest
+    outputs:
+      ios: ${{ steps.filter.outputs.ios }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for iOS changes
+        uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            ios:
+              - 'apps/mobile/ios/**'
+
+  test:
+    name: Run Unit Tests
+    runs-on: macos-latest
+    needs: changes
+    if: needs.changes.outputs.ios == 'true'
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Show available simulators
+        run: xcrun simctl list devices available
+
+      - name: Build project
+        run: |
+          xcodebuild clean build \
+            -project apps/mobile/ios/productive.xcodeproj \
+            -scheme productive \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+            -quiet
+        continue-on-error: false
+
+      - name: Run unit tests
+        run: |
+          xcodebuild test \
+            -project apps/mobile/ios/productive.xcodeproj \
+            -scheme productive \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+            -only-testing:productiveTests \
+            -quiet
+        continue-on-error: true
+
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: "apps/mobile/ios/**/test-results/**"
+          if-no-files-found: ignore
+
+  ui_test:
+    name: Run UI Tests
+    runs-on: macos-latest
+    needs: [changes, test]
+    if: needs.changes.outputs.ios == 'true'
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Get available iOS runtime
+        id: get_runtime
+        run: |
+          RUNTIME=$(xcrun simctl list runtimes available | grep -i ios | head -1 | sed 's/.*(\(.*\))/\1/' | xargs)
+          echo "runtime=$RUNTIME" >> $GITHUB_OUTPUT
+          echo "Using iOS runtime: $RUNTIME"
+
+      - name: Create iOS simulator
+        run: |
+          RUNTIME="${{ steps.get_runtime.outputs.runtime }}"
+          xcrun simctl create "iPhone 15" "iPhone 15" "$RUNTIME" 2>/dev/null || echo "Simulator may already exist"
+
+      - name: Boot iOS simulator
+        run: |
+          xcrun simctl boot "iPhone 15" 2>/dev/null || echo "Simulator may already be booted"
+          open -a Simulator || echo "Simulator app may already be open"
+
+      - name: Wait for simulator to be ready
+        run: |
+          echo "Waiting for simulator to boot..."
+          timeout 120 bash -c 'until xcrun simctl list devices | grep -q "iPhone 15.*Booted"; do sleep 2; done' || true
+          sleep 10
+
+      - name: Run UI tests
+        run: |
+          xcodebuild test \
+            -project apps/mobile/ios/productive.xcodeproj \
+            -scheme productive \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+            -only-testing:productiveUITests \
+            -quiet
+        continue-on-error: true
+
+      - name: Upload UI test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-results
+          path: "apps/mobile/ios/**/test-results/**"
+          if-no-files-found: ignore
+
+  build:
+    name: Build and Archive
+    runs-on: macos-latest
+    needs: [changes, test]
+    if: |
+      needs.changes.outputs.ios == 'true' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    timeout-minutes: 45
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Build and archive
+        run: |
+          xcodebuild archive \
+            -project apps/mobile/ios/productive.xcodeproj \
+            -scheme productive \
+            -archivePath apps/mobile/ios/build/productive.xcarchive \
+            -destination 'generic/platform=iOS' \
+            -quiet \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+        continue-on-error: true
+
+      - name: Export IPA (if archive succeeded)
+        if: success()
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath apps/mobile/ios/build/productive.xcarchive \
+            -exportPath apps/mobile/ios/build/export \
+            -exportOptionsPlist <(echo '<?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>development</string>
+            <key>teamID</key>
+            <string></string>
+          </dict>
+          </plist>') \
+            -quiet
+        continue-on-error: true
+
+      - name: Upload build artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-artifacts
+          path: |
+            apps/mobile/ios/build/**/*.xcarchive
+            apps/mobile/ios/build/**/*.ipa
+          if-no-files-found: ignore

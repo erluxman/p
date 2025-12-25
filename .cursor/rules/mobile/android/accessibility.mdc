@@ -1,0 +1,94 @@
+---
+description: Native Android accessibility rules (TalkBack, content descriptions, a11y support).
+globs:
+  - "apps/mobile/android/**/presentation/**"
+---
+
+# Native Android: Accessibility
+
+- All interactive elements must be accessible to screen readers (TalkBack).
+- Provide content descriptions for ImageViews and ImageButtons.
+- Support dynamic text scaling (use `sp` units for text, not `dp`).
+- Ensure sufficient color contrast (WCAG AA minimum).
+- Test with TalkBack enabled.
+
+## Content Descriptions
+
+```kotlin
+// ✅ GOOD: Content description for ImageView
+ImageView(
+    imageResource = R.drawable.ic_delete,
+    contentDescription = "Delete todo"
+)
+
+// ✅ GOOD: Content description for ImageButton
+ImageButton(
+    imageResource = R.drawable.ic_add,
+    contentDescription = "Add new todo",
+    onClick = { /* ... */ }
+)
+
+// ❌ BAD: Missing content description
+ImageView(imageResource = R.drawable.ic_delete) // Screen reader can't describe this
+```
+
+## Text Scaling
+
+```kotlin
+// ✅ GOOD: Use sp (scalable pixels) for text
+TextView(
+    text = "Todo title",
+    textSize = 16.sp // Respects user's text size preference
+)
+
+// ❌ BAD: Using dp for text
+TextView(
+    text = "Todo title",
+    textSize = 16.dp // Doesn't respect text scaling
+)
+```
+
+## Focus Management
+
+```kotlin
+// ✅ GOOD: Make interactive elements focusable
+Button(
+    text = "Create Todo",
+    onClick = { /* ... */ }
+).apply {
+    isFocusable = true
+    isFocusableInTouchMode = true
+}
+
+// For custom views, implement focus handling
+class CustomTodoView(context: Context) : View(context) {
+    override fun onFocusChanged(gainedFocus: Boolean, direction: Int, previouslyFocusedRect: Rect?) {
+        super.onFocusChanged(gainedFocus, direction, previouslyFocusedRect)
+        // Update visual state for focus
+    }
+}
+```
+
+## Color Contrast
+
+- Use theme colors that meet WCAG AA contrast ratios (4.5:1 for normal text, 3:1 for large text).
+- Test with accessibility tools (Android Studio Layout Inspector).
+- Never rely solely on color to convey information.
+
+## Semantic Labels
+
+```kotlin
+// ✅ GOOD: Semantic label for custom views
+class TodoItemView(context: Context) : View(context) {
+    init {
+        contentDescription = "Todo: ${todo.title}. ${if (todo.isCompleted) "Completed" else "Not completed"}"
+    }
+}
+```
+
+## Testing Accessibility
+
+- Enable TalkBack in device settings.
+- Navigate through the app using only TalkBack gestures.
+- Verify all interactive elements are accessible.
+- Test with different text size settings.

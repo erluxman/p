@@ -1,5 +1,7 @@
 # Architecture Decisions Log (ADR-lite)
 
+⚠️ **Template file** - Only include in LLM context when entries exist below.
+
 Purpose: keep key architectural decisions and their rationale visible over time.
 
 ## Entry format
@@ -15,4 +17,3 @@ Purpose: keep key architectural decisions and their rationale visible over time.
 ## Decisions
 
 - TBD
-

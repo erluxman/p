@@ -2,7 +2,7 @@
 
 # AI-Driven Development Prompt Templates (Test-First)
 
-Cross-platform Habit & Todo App. **TESTS ARE MANDATORY FOR EVERY CHANGE**. Use with Cursor (auto-loads .cursorrules).
+Cross-platform Habit & Todo App. **TESTS ARE MANDATORY FOR EVERY CHANGE**. Use with Cursor (auto-loads `.cursor/rules/**/*.mdc`).
 
 ## Usage Rules
 
@@ -39,8 +39,7 @@ Cross-platform Habit & Todo App. **TESTS ARE MANDATORY FOR EVERY CHANGE**. Use w
 
 1. critique_spec(): Identify gaps/missing edge cases.
 2. decompose_atomic(): Break into 3-5 tiny tasks **with test files**.
-3. prioritize_sequence(): Order for incremental builds.
-STOP. Wait for approval.
+3. prioritize_sequence(): Order for incremental builds. STOP. Wait for approval.
 
 ## 2. Feature Building Template
 
@@ -68,8 +67,7 @@ STOP. Wait for approval.
 2. plan_execution(): Exact files **+ test file** + line estimates.
 3. generate_tests(): Write **tests FIRST** with expected failures.
 4. generate_code(): Write code to make tests pass.
-5. self_verify(): Confirm 100% test coverage.
-STOP after each step.
+5. self_verify(): Confirm 100% test coverage. STOP after each step.
 
 ## 3. Code Review Template
 
@@ -86,7 +84,7 @@ STOP after each step.
 Review against these standards:
 
 - Architecture compliance
-- Style guide adherence  
+- Style guide adherence
 - **Test coverage** (must be 95%+)
 - Performance concerns
 
@@ -102,8 +100,7 @@ Review against these standards:
 1. systematic_audit(): Line-by-line violations + **missing tests**.
 2. test_coverage(): Missing test cases list.
 3. fix_proposals(): Atomic fixes **with test updates**.
-4. confidence_check(): % alignment + test coverage %.
-Output fixes + **new test cases** as diff patches.
+4. confidence_check(): % alignment + test coverage %. Output fixes + **new test cases** as diff patches.
 
 ## 4. Bug Fixing Template
 
@@ -132,8 +129,7 @@ Output fixes + **new test cases** as diff patches.
 2. repro_test(): **Write failing test FIRST** proving bug exists.
 3. minimal_fix(): Single change to make test pass.
 4. regression_suite(): Additional tests preventing regression.
-5. deploy_safe(): Confirm no side effects + 100% coverage.
-Apply fix + **tests only**.
+5. deploy_safe(): Confirm no side effects + 100% coverage. Apply fix + **tests only**.
 
 ## 5. Refactoring Template
 
@@ -192,11 +188,8 @@ Cover these cases:
 
 ### Test-First Enforcement Rules
 
-✅ **TESTS BEFORE CODE** - Always generate tests first
-✅ **Repro Tests for Bugs** - Prove bug exists before fixing  
-✅ **100% Coverage for New Code** - No untested lines allowed
-✅ **Regression Tests** - Prevent breaking existing features
-✅ **Test Names**: "should [action] when [condition]"
+✅ **TESTS BEFORE CODE** - Always generate tests first ✅ **Repro Tests for Bugs** - Prove bug exists before fixing  
+✅ **100% Coverage for New Code** - No untested lines allowed ✅ **Regression Tests** - Prevent breaking existing features ✅ **Test Names**: "should [action] when [condition]"
 
 ### Markdown Lint Compliance
 
@@ -204,7 +197,7 @@ Cover these cases:
 ✅ No multiple blank lines  
 ✅ Consistent heading levels  
 ✅ Proper list indentation  
-✅ **TESTS MANDATORY** in every template  
+✅ **TESTS MANDATORY** in every template
 
 **Save as `prompt_templates.md`** - Ready for your project root.
 

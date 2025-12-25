@@ -1,0 +1,254 @@
+---
+description: Native iOS UI rules (applies to Presentation layer only).
+globs:
+  - "apps/mobile/ios/**/Presentation/**"
+---
+
+# Native iOS: UI
+
+- No business logic in UI layer.
+- Handle loading/error/empty states explicitly in UI.
+- Prefer small, composable views; avoid large "god" views.
+- Use SwiftUI for new UI (preferred) or UIKit.
+
+## SwiftUI Views
+
+```swift
+// ✅ GOOD: SwiftUI view with explicit state handling
+struct TodoItemView: View {
+    let todo: TodoEntity
+    let onToggle: (String) -> Void
+    let onDelete: (String) -> Void
+
+    var body: some View {
+        HStack {
+            Text(todo.title)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button(action: { onToggle(todo.id) }) {
+                Image(systemName: todo.isCompleted ? "checkmark.circle.fill" : "circle")
+            }
+            .accessibilityLabel("Toggle todo completion")
+
+            Button(action: { onDelete(todo.id) }) {
+                Image(systemName: "trash")
+            }
+            .accessibilityLabel("Delete todo")
+        }
+        .padding()
+    }
+}
+
+// ❌ BAD: Business logic in view
+struct TodoItemView: View {
+    let todo: TodoEntity
+
+    var body: some View {
+        // Business logic here - WRONG!
+        let filteredTodos = todos.filter { $0.isCompleted } // Should be in use case
+        // ...
+    }
+}
+```
+
+## State Handling in SwiftUI
+
+```swift
+// ✅ GOOD: Explicit loading/error/empty states
+struct TodoListView: View {
+    @StateObject private var viewModel = TodoViewModel()
+
+    var body: some View {
+        Group {
+            switch viewModel.state {
+            case .idle:
+                EmptyView()
+            case .loading:
+                ProgressView()
+            case .error(let error):
+                ErrorView(
+                    message: error.localizedDescription,
+                    onRetry: { Task { await viewModel.loadTodos() } }
+                )
+            case .empty:
+                EmptyStateView(message: "No todos yet")
+            case .loaded(let todos):
+                List(todos) { todo in
+                    TodoItemView(
+                        todo: todo,
+                        onToggle: { viewModel.toggleTodo($0) },
+                        onDelete: { viewModel.deleteTodo($0) }
+                    )
+                }
+            }
+        }
+        .task {
+            await viewModel.loadTodos()
+        }
+    }
+}
+
+// ❌ BAD: No explicit state handling
+struct TodoListView: View {
+    @StateObject private var viewModel = TodoViewModel()
+
+    var body: some View {
+        // What if loading? What if error? What if empty?
+        List(viewModel.todos) { todo in
+            TodoItemView(todo: todo)
+        }
+    }
+}
+```
+
+## UIKit Views
+
+```swift
+// ✅ GOOD: UIKit view controller with explicit state handling
+class TodoListViewController: UIViewController {
+    @IBOutlet weak var tableView: UITableView!
+    @IBOutlet weak var loadingIndicator: UIActivityIndicatorView!
+    @IBOutlet weak var errorLabel: UILabel!
+    @IBOutlet weak var emptyLabel: UILabel!
+
+    private var viewModel: TodoViewModel!
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupViewModel()
+        observeViewModel()
+    }
+
+    private func observeViewModel() {
+        viewModel.$state
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.updateUI(for: state)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func updateUI(for state: TodoState) {
+        switch state {
+        case .idle:
+            break
+        case .loading:
+            loadingIndicator.startAnimating()
+            tableView.isHidden = true
+            errorLabel.isHidden = true
+            emptyLabel.isHidden = true
+        case .error(let error):
+            loadingIndicator.stopAnimating()
+            tableView.isHidden = true
+            errorLabel.isHidden = false
+            errorLabel.text = error.localizedDescription
+            emptyLabel.isHidden = true
+        case .empty:
+            loadingIndicator.stopAnimating()
+            tableView.isHidden = true
+            errorLabel.isHidden = true
+            emptyLabel.isHidden = false
+        case .loaded(let todos):
+            loadingIndicator.stopAnimating()
+            tableView.isHidden = false
+            errorLabel.isHidden = true
+            emptyLabel.isHidden = true
+            // Update table view data source
+        }
+    }
+}
+```
+
+## Business Logic Separation
+
+```swift
+// ✅ GOOD: View dispatches actions to ViewModel
+struct CreateTodoView: View {
+    @StateObject private var viewModel = CreateTodoViewModel()
+    @State private var title = ""
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        Form {
+            TextField("Title", text: $title)
+            Button("Create") {
+                Task {
+                    await viewModel.createTodo(title: title)
+                    dismiss()
+                }
+            }
+        }
+    }
+}
+
+// ❌ BAD: Business logic in view
+struct CreateTodoView: View {
+    @State private var title = ""
+
+    var body: some View {
+        Button("Create") {
+            Task {
+                // Direct repository call - WRONG!
+                let todo = await repository.create(title: title) // Should be in use case
+                // ...
+            }
+        }
+    }
+}
+```
+
+## Accessibility
+
+```swift
+// ✅ GOOD: Accessibility support
+struct TodoItemView: View {
+    let todo: TodoEntity
+    let onToggle: (String) -> Void
+
+    var body: some View {
+        HStack {
+            Text(todo.title)
+                .accessibilityLabel("Todo: \(todo.title)")
+                .accessibilityValue(todo.isCompleted ? "Completed" : "Not completed")
+
+            Button(action: { onToggle(todo.id) }) {
+                Image(systemName: todo.isCompleted ? "checkmark.circle.fill" : "circle")
+            }
+            .accessibilityLabel("Toggle todo completion")
+            .accessibilityHint("Double tap to mark as \(todo.isCompleted ? "incomplete" : "complete")")
+        }
+    }
+}
+```
+
+## Dynamic Type Support
+
+```swift
+// ✅ GOOD: Support for Dynamic Type
+struct TodoItemView: View {
+    let todo: TodoEntity
+
+    var body: some View {
+        Text(todo.title)
+            .font(.body) // Uses system font that scales with Dynamic Type
+            .lineLimit(nil) // Allow text to wrap
+            .minimumScaleFactor(0.8) // Scale down if needed
+    }
+}
+```
+
+## UI Best Practices
+
+- Use SwiftUI for new UI (preferred).
+- Use `@State` for local view state.
+- Use `@StateObject` for ViewModels that own the object.
+- Use `@ObservedObject` for ViewModels passed from parent.
+- Use `@EnvironmentObject` for shared state.
+- Handle all states: loading, success, error, empty.
+- Use accessibility modifiers for VoiceOver support.
+- Support Dynamic Type for text sizing.
+- Keep views small and focused (single responsibility).
+- Extract reusable view components.
+- Use `#Preview` for SwiftUI previews.
+- Use `@MainActor` for UI updates.
+- Prefer `async/await` over completion handlers.

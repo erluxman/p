@@ -2,7 +2,7 @@
 description: Flutter networking rules (API clients, error mapping, no hardcoded URLs).
 globs:
   - "flutter_app/lib/infrastructure/**"
-  - "apps/flutter/lib/infrastructure/**"
+  - "apps/mobile/flutter/lib/infrastructure/**"
 ---
 
 # Flutter: Networking

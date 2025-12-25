@@ -13,5 +13,3 @@
 ## Monitoring
 
 - Error monitoring / logging configured (if used).
-
-
