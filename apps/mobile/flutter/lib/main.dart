@@ -19,6 +19,7 @@ class HabitTodoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('HabitTodoApp build');
     return MaterialApp.router(
       title: 'Habit & Todo App',
       theme: ThemeData(
