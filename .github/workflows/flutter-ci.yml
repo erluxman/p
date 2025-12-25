@@ -119,9 +119,9 @@ jobs:
           disk-size: 6000M
           heap-size: 600M
           script: |
-            cd apps/mobile/flutter
-            echo "Current directory: $(pwd)"
-            flutter devices
+            cd apps/mobile/flutter && \
+            echo "Current directory: $(pwd)" && \
+            flutter devices && \
             flutter drive \
               --driver=test/integration/infra/driver.dart \
               --target=test/integration/todo_feature_integration.dart \
